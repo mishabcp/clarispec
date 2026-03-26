@@ -1,14 +1,6 @@
-'use client'
+import { redirect } from 'next/navigation'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-
+/** Server redirect avoids client-side navigation churn (can log "Connection closed" in some browsers). */
 export default function Home() {
-  const router = useRouter()
-
-  useEffect(() => {
-    router.replace('/login')
-  }, [router])
-
-  return null
+  redirect('/login')
 }
