@@ -13,7 +13,7 @@ const csp = [
   "font-src 'self' data: https://fonts.gstatic.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   `script-src 'self'${strictScriptSrc ? '' : " 'unsafe-eval' 'unsafe-inline'"}`,
-  "connect-src 'self' https://*.supabase.co https://api.groq.com https://generativelanguage.googleapis.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://generativelanguage.googleapis.com",
   "object-src 'none'",
 ].join('; ')
 
