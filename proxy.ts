@@ -48,7 +48,7 @@ async function hasValidAdminToken(token: string | undefined): Promise<boolean> {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/admin')) {
     const isAdminLogin = request.nextUrl.pathname === '/admin/login'
     if (!isAdminLogin) {
