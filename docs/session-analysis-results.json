@@ -1,0 +1,270 @@
+{
+  "projectId": "12ca0380-a049-4c27-bc4f-10f34390f242",
+  "fetchedAt": "2026-03-16T10:21:02.620Z",
+  "project": {
+    "id": "12ca0380-a049-4c27-bc4f-10f34390f242",
+    "name": "CBMS",
+    "client_name": "qwert",
+    "client_industry": "Real Estate",
+    "status": "gathering",
+    "depth_level": "deep",
+    "requirement_score": 100,
+    "created_at": "2026-03-16T08:32:01.304252+00:00",
+    "updated_at": "2026-03-16T09:25:09.105+00:00"
+  },
+  "messages": [
+    {
+      "id": "e8f65a67-b263-4bab-a86f-bbe0f3199a95",
+      "role": "assistant",
+      "message_type": "system",
+      "content": "I've analyzed the brief for **CBMS**. I can see this is a Construction project. I've identified some key areas we need to cover. Let me start with the most important question.",
+      "created_at": "2026-03-16T09:25:28.698194+00:00"
+    },
+    {
+      "id": "bc6fe307-0681-407a-80a4-ec0897b04c1c",
+      "role": "assistant",
+      "message_type": "question",
+      "content": "To help me understand the core need, what is the primary business challenge you're hoping this new software will solve?",
+      "created_at": "2026-03-16T09:25:28.992986+00:00"
+    },
+    {
+      "id": "81ff40b1-3587-427c-8a52-c84688ccabba",
+      "role": "user",
+      "message_type": "chat",
+      "content": "all of the above",
+      "created_at": "2026-03-16T09:46:51.908985+00:00"
+    },
+    {
+      "id": "3d176397-3e49-434e-be51-1cb6cc9fd343",
+      "role": "assistant",
+      "message_type": "chat",
+      "content": "That's a very clear indication of the breadth of challenges you're looking to address with this software.",
+      "created_at": "2026-03-16T09:47:11.890633+00:00"
+    },
+    {
+      "id": "f3192e1c-8e6a-4d10-bf6a-fa40fb5691be",
+      "role": "assistant",
+      "message_type": "question",
+      "content": "To help us define the core functionalities, could you tell me which primary business areas or functions you envision this software handling?",
+      "created_at": "2026-03-16T09:47:12.171577+00:00"
+    },
+    {
+      "id": "80bfb829-62ff-4986-b32e-cfd7ca9c4db0",
+      "role": "user",
+      "message_type": "chat",
+      "content": "all of the above",
+      "created_at": "2026-03-16T09:47:41.472786+00:00"
+    },
+    {
+      "id": "0a5bb21f-79e0-454b-b28f-46605334632d",
+      "role": "assistant",
+      "message_type": "chat",
+      "content": "Acknowledging that the software will encompass all those key business areas helps us understand its broad scope.",
+      "created_at": "2026-03-16T09:47:56.538393+00:00"
+    },
+    {
+      "id": "f67c4728-9de0-4b17-8d97-8cf83f80e564",
+      "role": "assistant",
+      "message_type": "question",
+      "content": "To help us visualize how the software will be used day-to-day, what is one key process or workflow you envision users completing within the system?",
+      "created_at": "2026-03-16T09:47:56.815908+00:00"
+    },
+    {
+      "id": "55cb3162-4b22-4e84-8d38-b3a5b5b9db10",
+      "role": "user",
+      "message_type": "chat",
+      "content": "all options except C",
+      "created_at": "2026-03-16T09:49:28.340939+00:00"
+    },
+    {
+      "id": "b3409ab9-33b4-4170-b155-83dc9d00f10e",
+      "role": "assistant",
+      "message_type": "chat",
+      "content": "That clarifies the primary workflows users will engage with in the system, helping us visualize the day-to-day operations.",
+      "created_at": "2026-03-16T09:49:39.056101+00:00"
+    },
+    {
+      "id": "20189e34-94b8-4289-a43a-c7f4be3f3449",
+      "role": "assistant",
+      "message_type": "question",
+      "content": "Given this software will manage your complete business, it's common for new systems to connect with existing tools to streamline operations. Are there any specific external systems or services your new software needs to integrate with?",
+      "created_at": "2026-03-16T09:49:39.340449+00:00"
+    },
+    {
+      "id": "0c5eb92b-8672-429e-b70d-fc825cb7e234",
+      "role": "user",
+      "message_type": "chat",
+      "content": "No",
+      "created_at": "2026-03-16T09:50:03.270824+00:00"
+    },
+    {
+      "id": "02c3c043-d102-4108-92a0-01aa87af73fd",
+      "role": "assistant",
+      "message_type": "chat",
+      "content": "Thank you for clarifying that there are no external systems requiring integration at this time. This helps us understand the initial boundaries of the system.",
+      "created_at": "2026-03-16T09:50:13.78117+00:00"
+    },
+    {
+      "id": "71b99720-5eec-4dac-ab85-c4aeef275a16",
+      "role": "assistant",
+      "message_type": "question",
+      "content": "To ensure the software is accessible and convenient for your team, how do you envision users primarily accessing and interacting with the system?",
+      "created_at": "2026-03-16T09:50:14.084711+00:00"
+    },
+    {
+      "id": "6354c6bf-0aba-4571-a360-dab1e29d0bf6",
+      "role": "user",
+      "message_type": "chat",
+      "content": "Through a web browser on any computer (a cloud-based solution).",
+      "created_at": "2026-03-16T09:50:45.716591+00:00"
+    },
+    {
+      "id": "a3d2e574-f7d5-42ca-9698-8034bfde9088",
+      "role": "assistant",
+      "message_type": "chat",
+      "content": "It's clear that a cloud-based web solution, accessible from any computer, is the preferred platform for your team. This helps ensure flexibility and accessibility.",
+      "created_at": "2026-03-16T09:50:53.600696+00:00"
+    },
+    {
+      "id": "5a3bbc91-769d-49e5-b8c2-fde698e3eae5",
+      "role": "assistant",
+      "message_type": "question",
+      "content": "Given the sensitive nature of business operations and client information in the construction industry, what level of data security and privacy is most critical for this new software?",
+      "created_at": "2026-03-16T09:50:53.884659+00:00"
+    },
+    {
+      "id": "f7693fa7-718e-4634-9d71-a03bda802a95",
+      "role": "user",
+      "message_type": "chat",
+      "content": "Standard security measures, focusing on protecting data in transit and at rest.",
+      "created_at": "2026-03-16T09:53:23.801392+00:00"
+    },
+    {
+      "id": "ded28c8a-ff10-4eea-9516-d5e22c5f5b16",
+      "role": "assistant",
+      "message_type": "chat",
+      "content": "It's helpful to know that standard security measures, focusing on protecting data in transit and at rest, are the priority for data security.",
+      "created_at": "2026-03-16T09:53:36.406318+00:00"
+    },
+    {
+      "id": "980f1123-9c3a-4ffb-a94d-6ec713f3e042",
+      "role": "assistant",
+      "message_type": "question",
+      "content": "To ensure the software remains effective and efficient as your business evolves, what are your key expectations regarding its performance and ability to handle future growth?",
+      "created_at": "2026-03-16T09:53:36.758799+00:00"
+    },
+    {
+      "id": "24f71675-d7ed-4faa-87af-517574b2d2f9",
+      "role": "user",
+      "message_type": "chat",
+      "content": "It needs to maintain high performance and speed even during peak usage periods and be able to scale significantly to accommodate substantial business expansion over several years.",
+      "created_at": "2026-03-16T09:54:58.711678+00:00"
+    },
+    {
+      "id": "975db468-a4e4-47b8-b171-1e015472c9c2",
+      "role": "assistant",
+      "message_type": "chat",
+      "content": "It's very clear that high performance and significant scalability are crucial for the long-term success of this software, ensuring it supports your business growth effectively.",
+      "created_at": "2026-03-16T09:55:10.780407+00:00"
+    },
+    {
+      "id": "4e18aa8a-9530-43cd-866b-e13cad995898",
+      "role": "assistant",
+      "message_type": "question",
+      "content": "To ensure we build a solution that aligns with your operational realities and project scope, are there any specific constraints we need to be aware of for this project?",
+      "created_at": "2026-03-16T09:55:11.095588+00:00"
+    },
+    {
+      "id": "5405352f-6f32-4266-b81c-838f8bf795d8",
+      "role": "assistant",
+      "message_type": "chat",
+      "content": "Understanding that compliance with industry regulations and legal requirements is a critical constraint helps us ensure the software is built to meet these essential standards.",
+      "created_at": "2026-03-16T09:56:27.557955+00:00"
+    },
+    {
+      "id": "3a2aefe1-6f70-4f30-9fa0-742f7fc55ed5",
+      "role": "assistant",
+      "message_type": "question",
+      "content": "To ensure the software is tailored to the specific needs of different team members, who are the primary types of users that will interact with this system, and what are their general responsibilities?",
+      "created_at": "2026-03-16T09:56:27.856868+00:00"
+    }
+  ],
+  "requirementAreas": [
+    {
+      "area_name": "constraints",
+      "is_covered": true,
+      "coverage_score": 0,
+      "notes": null,
+      "updated_at": "2026-03-16T09:25:08.997+00:00"
+    },
+    {
+      "area_name": "coreFeatures",
+      "is_covered": true,
+      "coverage_score": 0,
+      "notes": null,
+      "updated_at": "2026-03-16T09:25:08.997+00:00"
+    },
+    {
+      "area_name": "dataPrivacy",
+      "is_covered": true,
+      "coverage_score": 0,
+      "notes": null,
+      "updated_at": "2026-03-16T09:25:08.997+00:00"
+    },
+    {
+      "area_name": "integrations",
+      "is_covered": true,
+      "coverage_score": 0,
+      "notes": null,
+      "updated_at": "2026-03-16T09:25:08.997+00:00"
+    },
+    {
+      "area_name": "nonFunctional",
+      "is_covered": true,
+      "coverage_score": 0,
+      "notes": null,
+      "updated_at": "2026-03-16T09:25:08.997+00:00"
+    },
+    {
+      "area_name": "platform",
+      "is_covered": true,
+      "coverage_score": 0,
+      "notes": null,
+      "updated_at": "2026-03-16T09:25:08.997+00:00"
+    },
+    {
+      "area_name": "purpose",
+      "is_covered": true,
+      "coverage_score": 0,
+      "notes": null,
+      "updated_at": "2026-03-16T09:25:08.997+00:00"
+    },
+    {
+      "area_name": "scale",
+      "is_covered": true,
+      "coverage_score": 0,
+      "notes": null,
+      "updated_at": "2026-03-16T09:25:08.997+00:00"
+    },
+    {
+      "area_name": "userFlows",
+      "is_covered": true,
+      "coverage_score": 0,
+      "notes": null,
+      "updated_at": "2026-03-16T09:25:08.997+00:00"
+    },
+    {
+      "area_name": "userRoles",
+      "is_covered": true,
+      "coverage_score": 0,
+      "notes": null,
+      "updated_at": "2026-03-16T09:25:08.997+00:00"
+    }
+  ],
+  "counts": {
+    "userMessages": 7,
+    "aiQuestions": 9,
+    "aiMessages": 18
+  },
+  "error": null
+}
