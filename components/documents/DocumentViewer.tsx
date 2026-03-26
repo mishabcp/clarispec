@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { createClient } from '@/lib/supabase/client'
@@ -29,9 +29,9 @@ export function DocumentViewer({ document, onUpdate }: DocumentViewerProps) {
   const [selectedText, setSelectedText] = useState('')
 
   const articleRef = useRef<HTMLElement>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
-  async function saveContent(newContent: string) {
+  const saveContent = useCallback(async (newContent: string) => {
     setSaving(true)
     const { data, error } = await supabase
       .from('documents')
@@ -51,7 +51,7 @@ export function DocumentViewer({ document, onUpdate }: DocumentViewerProps) {
 
     setSaving(false)
     return !error
-  }
+  }, [document.id, onUpdate, supabase])
 
   async function handleManualSave() {
     const ok = await saveContent(content)
@@ -106,14 +106,14 @@ export function DocumentViewer({ document, onUpdate }: DocumentViewerProps) {
     setAiResult(null)
     setAiEditing(false)
     setSelectedText('')
-  }, [])
+  }, [saveContent])
 
   const handleDiffAcceptAll = useCallback(async (newContent: string) => {
     await saveContent(newContent)
     setAiResult(null)
     setAiEditing(false)
     setSelectedText('')
-  }, [])
+  }, [saveContent])
 
   const handleDiffRejectAll = useCallback(() => {
     setAiResult(null)

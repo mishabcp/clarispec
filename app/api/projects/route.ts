@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { asDepthLevel, asObject, asString } from '@/lib/validation'
+import { isSameOrigin } from '@/lib/security'
 
 export async function GET() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
@@ -16,31 +18,47 @@ export async function GET() {
     .order('created_at', { ascending: false })
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 })
   }
 
   return NextResponse.json(data)
 }
 
 export async function POST(request: Request) {
-  const supabase = createClient()
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
+  }
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await request.json()
+  const raw = await request.json()
+  const body = asObject(raw)
+  if (!body) {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+
+  const name = asString(body.name, 120, true)
+  const initialBrief = asString(body.initial_brief, 12000, true)
+  const clientName = asString(body.client_name, 120)
+  const clientIndustry = asString(body.client_industry, 120)
+  const depthLevel = asDepthLevel(body.depth_level) || 'standard'
+  if (!name || !initialBrief) {
+    return NextResponse.json({ error: 'name and initial_brief are required' }, { status: 400 })
+  }
 
   const { data, error } = await supabase
     .from('projects')
     .insert({
       user_id: user.id,
-      name: body.name,
-      client_name: body.client_name,
-      client_industry: body.client_industry,
-      initial_brief: body.initial_brief,
-      depth_level: body.depth_level || 'standard',
+      name,
+      client_name: clientName || null,
+      client_industry: clientIndustry || null,
+      initial_brief: initialBrief,
+      depth_level: depthLevel,
       status: 'gathering',
       requirement_score: 0,
     })
@@ -48,7 +66,7 @@ export async function POST(request: Request) {
     .single()
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create project' }, { status: 500 })
   }
 
   return NextResponse.json(data)

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { DepthSelector, DocumentSelector } from '@/components/project/ProjectSetup'
+import { clientError } from '@/lib/client-log'
 import type { DepthLevel, DocumentType } from '@/types'
 import { INDUSTRIES, DOCUMENT_TYPES } from '@/types'
 import { ArrowLeft, ArrowRight, Loader2, Sparkles } from 'lucide-react'
@@ -63,7 +64,7 @@ export default function NewProjectPage() {
       .single()
 
     if (error || !project) {
-      console.error('Error creating project:', JSON.stringify(error, null, 2))
+      clientError('Error creating project')
       alert(`Error creating project: ${error?.message || 'Unknown error'}`)
       setLoading(false)
       return

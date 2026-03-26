@@ -29,6 +29,30 @@ const statusVariants: Record<string, 'warning' | 'success' | 'secondary'> = {
   archived: 'secondary',
 }
 
+function SortHeader({
+  field,
+  sortField,
+  onToggleSort,
+  children,
+}: {
+  field: string
+  sortField: string
+  onToggleSort: (field: string) => void
+  children: React.ReactNode
+}) {
+  return (
+    <th
+      className="text-left px-5 py-3 font-medium cursor-pointer hover:text-text-primary select-none"
+      onClick={() => onToggleSort(field)}
+    >
+      <span className="flex items-center gap-1">
+        {children}
+        <ArrowUpDown className={`h-3 w-3 ${sortField === field ? 'text-primary' : ''}`} />
+      </span>
+    </th>
+  )
+}
+
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<AdminProject[]>([])
   const [loading, setLoading] = useState(true)
@@ -66,18 +90,6 @@ export default function AdminProjectsPage() {
       setSortOrder('desc')
     }
   }
-
-  const SortHeader = ({ field, children }: { field: string; children: React.ReactNode }) => (
-    <th
-      className="text-left px-5 py-3 font-medium cursor-pointer hover:text-text-primary select-none"
-      onClick={() => toggleSort(field)}
-    >
-      <span className="flex items-center gap-1">
-        {children}
-        <ArrowUpDown className={`h-3 w-3 ${sortField === field ? 'text-primary' : ''}`} />
-      </span>
-    </th>
-  )
 
   return (
     <div className="space-y-6">
@@ -128,14 +140,14 @@ export default function AdminProjectsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-text-muted">
-                  <SortHeader field="name">Name</SortHeader>
+                  <SortHeader field="name" sortField={sortField} onToggleSort={toggleSort}>Name</SortHeader>
                   <th className="text-left px-5 py-3 font-medium">Owner</th>
                   <th className="text-left px-5 py-3 font-medium">Industry</th>
-                  <SortHeader field="status">Status</SortHeader>
-                  <SortHeader field="requirement_score">Score</SortHeader>
+                  <SortHeader field="status" sortField={sortField} onToggleSort={toggleSort}>Status</SortHeader>
+                  <SortHeader field="requirement_score" sortField={sortField} onToggleSort={toggleSort}>Score</SortHeader>
                   <th className="text-left px-5 py-3 font-medium">Msgs</th>
                   <th className="text-left px-5 py-3 font-medium">Docs</th>
-                  <SortHeader field="created_at">Created</SortHeader>
+                  <SortHeader field="created_at" sortField={sortField} onToggleSort={toggleSort}>Created</SortHeader>
                 </tr>
               </thead>
               <tbody>

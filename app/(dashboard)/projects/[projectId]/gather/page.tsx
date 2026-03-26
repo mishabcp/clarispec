@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ChatInterface } from '@/components/gather/ChatInterface'
 import { RequirementProgress } from '@/components/gather/RequirementProgress'
 import { getDefaultRequirementAreas } from '@/lib/ai/conversation'
+import { clientError, clientLog, clientWarn } from '@/lib/client-log'
 import type { Project, RequirementAreas, DepthLevel } from '@/types'
 import { DEPTH_THRESHOLDS } from '@/types'
 import { Loader2 } from 'lucide-react'
@@ -19,19 +20,27 @@ export default function GatherPage() {
   const [score, setScore] = useState(0)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     async function loadProject() {
-      const { data: projectData } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', projectId)
-        .single()
-
-      if (projectData) {
-        setProject(projectData as Project)
+      try {
+        const res = await fetch(`/api/projects/${projectId}`, { cache: 'no-store' })
+        if (res.status === 401) {
+          router.replace('/login')
+          return
+        }
+        if (!res.ok) {
+          router.replace('/dashboard')
+          return
+        }
+        const projectData = (await res.json()) as Project
+        setProject(projectData)
         setScore(projectData.requirement_score || 0)
+      } catch (e) {
+        clientError('[Gather] Failed to load project via API:', e)
+        router.replace('/dashboard')
+        return
       }
 
       const { data: areasData } = await supabase
@@ -54,7 +63,7 @@ export default function GatherPage() {
     }
 
     loadProject()
-  }, [projectId])
+  }, [projectId, router, supabase])
 
   function handleScoreUpdate(newScore: number, newAreas: RequirementAreas) {
     setScore(newScore)
@@ -74,19 +83,19 @@ export default function GatherPage() {
         .eq('is_selected', true)
 
       if (selError) {
-        console.error('[Generate] Failed to fetch document selections:', selError.message)
+        clientError('[Generate] Failed to fetch document selections:', selError.message)
       }
 
       let selectedDocs = selections?.map((s) => s.doc_type) || []
 
       // If no selections found (e.g. RLS issue or missing rows), default to all doc types
       if (selectedDocs.length === 0) {
-        console.warn('[Generate] No document selections found — using all document types as default')
+        clientWarn('[Generate] No document selections found — using all document types as default')
         const { DOCUMENT_TYPES } = await import('@/types')
         selectedDocs = DOCUMENT_TYPES.map((d) => d.type)
       }
 
-      console.log('[Generate] Generating docs:', selectedDocs)
+      clientLog('[Generate] Generating docs:', selectedDocs)
 
       const res = await fetch('/api/ai/generate', {
         method: 'POST',
@@ -99,7 +108,7 @@ export default function GatherPage() {
 
       if (!res.ok) {
         const errBody = await res.text()
-        console.error('[Generate] API error:', res.status, errBody)
+        clientError('[Generate] API error:', res.status, errBody)
         const isRateLimit = res.status === 429
         alert(
           isRateLimit
@@ -117,7 +126,7 @@ export default function GatherPage() {
 
       router.push(`/projects/${projectId}/documents`)
     } catch (err) {
-      console.error('[Generate] Error:', err)
+      clientError('[Generate] Error:', err)
       alert('Failed to generate documents. Please try again.')
     }
 

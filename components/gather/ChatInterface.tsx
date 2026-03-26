@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { MessageBubble } from './MessageBubble'
 import { QuestionCard } from './QuestionCard'
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import type { Message, Project, RequirementAreas, AIResponse } from '@/types'
 import { REQUIREMENT_AREA_LABELS, DEPTH_THRESHOLDS } from '@/types'
 import { formatConversationHistory, getDefaultRequirementAreas, calculateScore, buildTopicSummary, buildCategoryCounts } from '@/lib/ai/conversation'
+import { clientError } from '@/lib/client-log'
 import { Send, X, CheckCircle2 } from 'lucide-react'
 
 interface ChatInterfaceProps {
@@ -29,11 +30,45 @@ export function ChatInterface({ project, onScoreUpdate }: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const initRef = useRef(false)
   const submittingRef = useRef(false)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   function scrollToBottom() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
+
+  const saveMessage = useCallback(async (
+    content: string,
+    role: 'user' | 'assistant',
+    messageType: string = 'chat',
+    metadata: Record<string, unknown> = {}
+  ): Promise<Message> => {
+    try {
+      const res = await fetch(`/api/projects/${project.id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, content, message_type: messageType, metadata }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        return data as Message
+      }
+
+      clientError('Failed to save message via API:', res.status, await res.text())
+    } catch (err) {
+      clientError('Failed to save message:', err)
+    }
+
+    return {
+      id: crypto.randomUUID(),
+      project_id: project.id,
+      role,
+      content,
+      message_type: messageType,
+      metadata,
+      created_at: new Date().toISOString(),
+    } as Message
+  }, [project.id])
 
   useEffect(() => {
     scrollToBottom()
@@ -94,7 +129,7 @@ export function ChatInterface({ project, onScoreUpdate }: ChatInterfaceProps) {
           return
         }
       } catch (e) {
-        console.error('Failed to load existing messages:', e)
+        clientError('Failed to load existing messages:', e)
       }
 
       setIsTyping(true)
@@ -155,7 +190,7 @@ export function ChatInterface({ project, onScoreUpdate }: ChatInterfaceProps) {
           isComplete: false,
         })
       } catch (err) {
-        console.error('Init error:', err)
+        clientError('Init error:', err)
         const fallbackMsg = await saveMessage(
           'Welcome! I\'m ready to help gather requirements for your project. Could you tell me more about the primary goal of this project?',
           'assistant',
@@ -168,41 +203,15 @@ export function ChatInterface({ project, onScoreUpdate }: ChatInterfaceProps) {
     }
 
     init()
-  }, [project.id])
-
-  async function saveMessage(
-    content: string,
-    role: 'user' | 'assistant',
-    messageType: string = 'chat',
-    metadata: Record<string, unknown> = {}
-  ): Promise<Message> {
-    try {
-      const res = await fetch(`/api/projects/${project.id}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role, content, message_type: messageType, metadata }),
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        return data as Message
-      }
-
-      console.error('Failed to save message via API:', res.status, await res.text())
-    } catch (err) {
-      console.error('Failed to save message:', err)
-    }
-
-    return {
-      id: crypto.randomUUID(),
-      project_id: project.id,
-      role,
-      content,
-      message_type: messageType,
-      metadata,
-      created_at: new Date().toISOString(),
-    } as Message
-  }
+  }, [
+    project.id,
+    project.client_industry,
+    project.initial_brief,
+    project.name,
+    project.requirement_score,
+    saveMessage,
+    supabase,
+  ])
 
   function handleEdit(message: Message) {
     if (isTyping) return
@@ -247,7 +256,7 @@ export function ChatInterface({ project, onScoreUpdate }: ChatInterfaceProps) {
 
       if (!res.ok) {
         const errBody = await res.text()
-        console.error('[Clarispec Chat] API error:', res.status, res.statusText, '—', errBody?.substring(0, 300))
+        clientError('[Clarispec Chat] API error:', res.status, res.statusText, '—', errBody?.substring(0, 300))
         let userMessage = `AI API returned ${res.status}`
         if (res.status === 429) {
           try {
@@ -375,12 +384,12 @@ export function ChatInterface({ project, onScoreUpdate }: ChatInterfaceProps) {
       const errMessage = err instanceof Error ? err.message : String(err)
       const errName = err instanceof Error ? err.name : typeof err
       const isGeneric = !(err instanceof Error && err.message.includes('at capacity'))
-      console.error('[Clarispec Chat] sendMessage failed:', errName, errMessage)
+      clientError('[Clarispec Chat] sendMessage failed:', errName, errMessage)
       if (err instanceof Error && err.stack) {
-        console.error('[Clarispec Chat] Stack:', err.stack)
+        clientError('[Clarispec Chat] Stack:', err.stack)
       }
       if (isGeneric) {
-        console.error('[Clarispec Chat] Showing generic apology to user. Actual error above.')
+        clientError('[Clarispec Chat] Showing generic apology to user. Actual error above.')
       }
       const friendlyMessage =
         err instanceof Error && err.message.includes('at capacity')
@@ -406,7 +415,7 @@ export function ChatInterface({ project, onScoreUpdate }: ChatInterfaceProps) {
         body: JSON.stringify({ messageId: editingMessage.id }),
       })
       if (!res.ok) {
-        console.error('Failed to delete messages:', await res.text())
+        clientError('Failed to delete messages:', await res.text())
         return
       }
       const idx = messages.findIndex((m) => m.id === editingMessage.id)

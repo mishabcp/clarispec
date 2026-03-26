@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ProjectHeader } from '@/components/project/ProjectHeader'
@@ -15,7 +15,7 @@ export default function ProjectOverviewPage() {
   const [project, setProject] = useState<Project | null>(null)
   const [areas, setAreas] = useState<RequirementArea[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     async function loadProject() {
@@ -42,7 +42,7 @@ export default function ProjectOverviewPage() {
     }
 
     loadProject()
-  }, [projectId])
+  }, [projectId, supabase])
 
   if (loading || !project) {
     return (

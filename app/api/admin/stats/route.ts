@@ -84,8 +84,8 @@ export async function GET() {
       recentProjects: enrichedRecent,
       dailyProjectCounts: dailyCounts,
     })
-  } catch (error) {
-    console.error('Admin stats error:', error)
+  } catch {
+    console.error('Admin stats error')
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }

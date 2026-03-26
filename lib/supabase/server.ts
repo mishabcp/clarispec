@@ -1,13 +1,19 @@
+import 'server-only'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
+import { requireServerEnv } from '@/lib/server-config'
 
-export function createClient() {
-  const cookieStore = cookies()
+export async function createClient() {
+  // Next.js `cookies()` is async in some runtimes; unwrap once so the supabase
+  // cookie adapter can synchronously access the cookie store.
+  const cookieStore = await cookies()
+  const supabaseUrl = requireServerEnv('NEXT_PUBLIC_SUPABASE_URL')
+  const supabaseAnonKey = requireServerEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
@@ -33,8 +39,10 @@ export function createClient() {
 }
 
 export function createAdminClient() {
+  const supabaseUrl = requireServerEnv('NEXT_PUBLIC_SUPABASE_URL')
+  const serviceRoleKey = requireServerEnv('SUPABASE_SERVICE_ROLE_KEY')
   return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    supabaseUrl,
+    serviceRoleKey
   )
 }

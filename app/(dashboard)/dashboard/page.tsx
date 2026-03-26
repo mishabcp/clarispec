@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { StatsBar } from '@/components/dashboard/StatsBar'
@@ -17,7 +17,7 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<ProjectWithDocs[]>([])
   const [userName, setUserName] = useState('')
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     async function loadData() {
@@ -57,7 +57,7 @@ export default function DashboardPage() {
     }
 
     loadData()
-  }, [])
+  }, [supabase])
 
   const totalProjects = projects.length
   const inProgress = projects.filter(p => p.status === 'gathering').length

@@ -4,6 +4,18 @@ import { requireAdmin } from '@/lib/admin'
 
 export const dynamic = 'force-dynamic'
 
+const ALLOWED_SORT_FIELDS = new Set([
+  'created_at',
+  'updated_at',
+  'name',
+  'status',
+  'requirement_score',
+])
+
+function sanitizeSearch(value: string): string {
+  return value.replace(/[%*,()]/g, '').trim()
+}
+
 export async function GET(request: Request) {
   try {
     const session = await requireAdmin()
@@ -15,15 +27,22 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const search = searchParams.get('search')
-    const sort = searchParams.get('sort') || 'created_at'
-    const order = searchParams.get('order') || 'desc'
+    const sortRaw = searchParams.get('sort') || 'created_at'
+    const orderRaw = searchParams.get('order') || 'desc'
     const userId = searchParams.get('userId')
+    const sort = ALLOWED_SORT_FIELDS.has(sortRaw) ? sortRaw : 'created_at'
+    const order = orderRaw === 'asc' ? 'asc' : 'desc'
 
     let query = admin.from('projects').select('*')
 
     if (status) query = query.eq('status', status)
     if (userId) query = query.eq('user_id', userId)
-    if (search) query = query.or(`name.ilike.%${search}%,client_name.ilike.%${search}%,client_industry.ilike.%${search}%`)
+    if (search) {
+      const cleanedSearch = sanitizeSearch(search)
+      if (cleanedSearch) {
+        query = query.or(`name.ilike.%${cleanedSearch}%,client_name.ilike.%${cleanedSearch}%,client_industry.ilike.%${cleanedSearch}%`)
+      }
+    }
 
     query = query.order(sort, { ascending: order === 'asc' })
 
@@ -61,8 +80,8 @@ export async function GET(request: Request) {
     })) || []
 
     return NextResponse.json(enriched)
-  } catch (error) {
-    console.error('Admin projects error:', error)
+  } catch {
+    console.error('Admin projects error')
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }

@@ -3,26 +3,41 @@ import { createClient } from '@/lib/supabase/server'
 import { generateAllDocuments } from '@/lib/documents/generator'
 import { formatConversationHistory } from '@/lib/ai/conversation'
 import type { DocumentType, Message } from '@/types'
+import { checkRateLimit, getClientIp, isSameOrigin } from '@/lib/security'
+import { asDocumentType, asObject, asString } from '@/lib/validation'
 
 export async function POST(request: Request) {
   try {
-    const { projectId, selectedDocs } = await request.json() as {
-      projectId: string
-      selectedDocs: DocumentType[]
+    if (!isSameOrigin(request)) {
+      return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
     }
+    const raw = await request.json()
+    const body = asObject(raw)
+    if (!body) {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    }
+    const projectId = asString(body.projectId, 80, true)
+    const selectedDocsRaw = Array.isArray(body.selectedDocs) ? body.selectedDocs : []
+    const selectedDocs = selectedDocsRaw
+      .map((d) => asDocumentType(d))
+      .filter((d): d is DocumentType => Boolean(d))
 
-    if (!projectId || !selectedDocs?.length) {
+    if (!projectId || selectedDocs.length === 0) {
       return NextResponse.json(
         { error: 'projectId and selectedDocs are required' },
         { status: 400 }
       )
     }
 
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const ip = getClientIp(request)
+    if (!(await checkRateLimit(`ai-generate:${user.id}:${ip}`, 10, 60 * 1000))) {
+      return NextResponse.json({ error: 'Too many requests. Try again shortly.' }, { status: 429 })
     }
 
     // Get project
@@ -44,7 +59,7 @@ export async function POST(request: Request) {
       .eq('project_id', projectId)
       .order('created_at', { ascending: true })
 
-    const conversationHistory = formatConversationHistory((messages || []) as Message[], Infinity)
+    const conversationHistory = formatConversationHistory((messages || []) as Message[], 20000)
 
     const projectInfo = {
       name: project.name,
@@ -79,13 +94,13 @@ export async function POST(request: Request) {
       (error instanceof Error && /429|quota|rate limit/i.test(message)) ||
       (error && typeof error === 'object' && 'status' in error && (error as { status: number }).status === 429)
     if (isRateLimit) {
-      console.warn('Document generation rate-limited:', message.substring(0, 200))
+      console.warn('Document generation rate-limited')
       return NextResponse.json(
         { error: 'AI is at capacity. Please try again in a minute.' },
         { status: 429 }
       )
     }
-    console.error('Document generation error:', message)
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error('Document generation error')
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }

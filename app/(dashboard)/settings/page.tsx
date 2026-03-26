@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,7 +19,7 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [changingPassword, setChangingPassword] = useState(false)
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const { addToast } = useToast()
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export default function SettingsPage() {
     }
 
     loadProfile()
-  }, [])
+  }, [supabase])
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault()

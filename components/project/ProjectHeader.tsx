@@ -77,7 +77,6 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
       if (projectError) throw projectError
 
       router.push(`/projects/${project.id}/gather`)
-      router.refresh()
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong'
       alert(`Failed to restart gathering: ${message}`)

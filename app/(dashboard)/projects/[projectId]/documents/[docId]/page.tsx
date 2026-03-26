@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { DocumentViewer } from '@/components/documents/DocumentViewer'
+import { clientError } from '@/lib/client-log'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { Document } from '@/types'
@@ -18,7 +19,7 @@ export default function DocumentViewPage() {
   const [document, setDocument] = useState<Document | null>(null)
   const [loading, setLoading] = useState(true)
   const [regenerating, setRegenerating] = useState(false)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     async function loadDocument() {
@@ -33,7 +34,7 @@ export default function DocumentViewPage() {
     }
 
     loadDocument()
-  }, [docId])
+  }, [docId, supabase])
 
   async function handleRegenerate() {
     if (!document) return
@@ -55,7 +56,7 @@ export default function DocumentViewPage() {
         router.push(`/projects/${projectId}/documents`)
       }
     } catch (err) {
-      console.error('Regenerate error:', err)
+      clientError('Regenerate error:', err)
     }
 
     setRegenerating(false)

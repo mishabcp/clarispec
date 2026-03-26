@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -18,7 +18,7 @@ export default function DocumentsListPage() {
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [exportDone, setExportDone] = useState(false)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     async function loadData() {
@@ -41,7 +41,7 @@ export default function DocumentsListPage() {
     }
 
     loadData()
-  }, [projectId])
+  }, [projectId, supabase])
 
   async function handleExportAll() {
     setExporting(true)

@@ -1,5 +1,6 @@
 import { generateWithGroq, isGroqRateLimitError } from '@/lib/ai/groq'
 import { generateWithGemini } from '@/lib/ai/gemini'
+import { redactSensitivePromptInput } from '@/lib/ai/redaction'
 
 export interface GenerateTextOptions {
   maxTokens: number
@@ -15,18 +16,20 @@ export async function generateText(
   prompt: string,
   opts: GenerateTextOptions
 ): Promise<string> {
+  const safeSystem = redactSensitivePromptInput(system)
+  const safePrompt = redactSensitivePromptInput(prompt)
   const useGroq = Boolean(process.env.GROQ_API_KEY)
 
   if (!useGroq) {
-    return generateWithGemini(system, prompt, opts)
+    return generateWithGemini(safeSystem, safePrompt, opts)
   }
 
   try {
-    return await generateWithGroq(system, prompt, opts)
+    return await generateWithGroq(safeSystem, safePrompt, opts)
   } catch (err) {
     if (isGroqRateLimitError(err)) {
       console.warn('[AI Fallback] Groq rate-limited, falling back to Gemini')
-      return await generateWithGemini(system, prompt, opts)
+      return await generateWithGemini(safeSystem, safePrompt, opts)
     }
     throw err
   }

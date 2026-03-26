@@ -1,3 +1,4 @@
+import 'server-only'
 import Groq from 'groq-sdk'
 import { RateLimitError } from 'groq-sdk'
 

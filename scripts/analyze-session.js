@@ -25,6 +25,11 @@ const PROJECT_ID = '12ca0380-a049-4c27-bc4f-10f34390f242'
 const OUT_PATH = path.join(__dirname, '..', 'docs', 'session-analysis-results.json')
 
 async function main() {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PROD_ADMIN_SCRIPTS !== 'true') {
+    console.error('Refusing to run in production. Set ALLOW_PROD_ADMIN_SCRIPTS=true if you intend to proceed.')
+    process.exit(1)
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) {

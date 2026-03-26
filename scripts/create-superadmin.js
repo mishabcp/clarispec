@@ -22,12 +22,51 @@
  */
 
 const crypto = require('crypto')
+const readline = require('readline')
+const PBKDF2_ITERATIONS = 210000
+const PBKDF2_KEYLEN = 32
+const PBKDF2_DIGEST = 'sha256'
+
+function readHidden(promptText) {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      terminal: true,
+    })
+    const stdin = process.stdin
+    const onData = (char) => {
+      const c = char.toString()
+      if (c === '\n' || c === '\r' || c === '\u0004') return
+      readline.cursorTo(process.stdout, 0)
+      process.stdout.write(promptText + '*'.repeat(rl.line.length))
+    }
+    process.stdout.write(promptText)
+    stdin.on('data', onData)
+    rl.question('', (value) => {
+      stdin.removeListener('data', onData)
+      rl.close()
+      process.stdout.write('\n')
+      resolve(value)
+    })
+  })
+}
 
 async function main() {
-  const [,, email, password, name] = process.argv
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PROD_ADMIN_SCRIPTS !== 'true') {
+    console.error('Refusing to run in production. Set ALLOW_PROD_ADMIN_SCRIPTS=true if you intend to proceed.')
+    process.exit(1)
+  }
 
-  if (!email || !password) {
-    console.error('Usage: node scripts/create-superadmin.js <email> <password> [name]')
+  const [,, email, passwordArg, name] = process.argv
+
+  if (!email) {
+    console.error('Usage: node scripts/create-superadmin.js <email> [password] [name]')
+    process.exit(1)
+  }
+  const password = passwordArg || await readHidden('Password: ')
+  if (!password) {
+    console.error('Password is required')
     process.exit(1)
   }
 
@@ -42,7 +81,11 @@ async function main() {
     process.exit(1)
   }
 
-  const passwordHash = crypto.createHash('sha256').update(password).digest('hex')
+  const salt = crypto.randomBytes(16).toString('hex')
+  const derived = crypto
+    .pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, PBKDF2_KEYLEN, PBKDF2_DIGEST)
+    .toString('hex')
+  const passwordHash = `pbkdf2$${PBKDF2_ITERATIONS}$${salt}$${derived}`
 
   const response = await fetch(`${supabaseUrl}/rest/v1/superadmins`, {
     method: 'POST',

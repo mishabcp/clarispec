@@ -4,6 +4,10 @@ import { requireAdmin } from '@/lib/admin'
 
 export const dynamic = 'force-dynamic'
 
+function sanitizeSearch(value: string): string {
+  return value.replace(/[%*,()]/g, '').trim()
+}
+
 export async function GET(request: Request) {
   try {
     const session = await requireAdmin()
@@ -14,10 +18,11 @@ export async function GET(request: Request) {
     const admin = createAdminClient()
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
+    const cleanedSearch = search ? sanitizeSearch(search) : ''
 
     let query = admin.from('profiles').select('*').order('created_at', { ascending: false })
-    if (search) {
-      query = query.or(`full_name.ilike.%${search}%,company_name.ilike.%${search}%`)
+    if (cleanedSearch) {
+      query = query.or(`full_name.ilike.%${cleanedSearch}%,company_name.ilike.%${cleanedSearch}%`)
     }
 
     const { data: profiles, error } = await query
@@ -51,17 +56,17 @@ export async function GET(request: Request) {
     }) || []
 
     // If searching, also filter by email match
-    const filtered = search
+    const filtered = cleanedSearch
       ? enriched.filter(u =>
-          u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-          u.company_name?.toLowerCase().includes(search.toLowerCase()) ||
-          u.email.toLowerCase().includes(search.toLowerCase())
+          u.full_name?.toLowerCase().includes(cleanedSearch.toLowerCase()) ||
+          u.company_name?.toLowerCase().includes(cleanedSearch.toLowerCase()) ||
+          u.email.toLowerCase().includes(cleanedSearch.toLowerCase())
         )
       : enriched
 
     return NextResponse.json(filtered)
-  } catch (error) {
-    console.error('Admin users error:', error)
+  } catch {
+    console.error('Admin users error')
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }
