@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { ClientErrorLogger } from '@/components/ClientErrorLogger'
 
 export const metadata: Metadata = {
   title: 'Clarispec — AI-Powered Requirements Engineering',
@@ -17,6 +18,7 @@ export default function RootLayout({
         className="min-h-screen bg-navy antialiased"
         suppressHydrationWarning
       >
+        <ClientErrorLogger />
         {children}
       </body>
     </html>
