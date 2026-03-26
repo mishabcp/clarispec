@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
@@ -40,29 +39,20 @@ export function LoginForm() {
   return (
     <div className="space-y-10">
       <div className="space-y-2">
-        <motion.h2 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.5 }}
-          className="text-2xl font-light text-white tracking-tight leading-none"
-        >
+        <h2 className="text-2xl font-light text-white tracking-tight leading-none opacity-0 animate-auth-heading">
           Sign in
-        </motion.h2>
+        </h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <AnimatePresence mode="wait">
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="border-l-[1.5px] border-red-500 bg-red-500/[0.05] px-4 py-3 text-[11px] text-red-400 tracking-wide font-medium rounded-sm mb-4"
-            >
-              {error}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {error && (
+          <div
+            role="alert"
+            className="border-l-[1.5px] border-red-500 bg-red-500/[0.05] px-4 py-3 text-[11px] text-red-400 tracking-wide font-medium rounded-sm mb-4 animate-fade-in"
+          >
+            {error}
+          </div>
+        )}
 
         <div className="space-y-4">
           <div className="space-y-1 group relative">

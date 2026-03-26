@@ -41,8 +41,24 @@ const config: Config = {
         'fade-in': 'fadeIn 0.3s ease-in',
         'slide-up': 'slideUp 0.3s ease-out',
         'pulse-dot': 'pulseDot 1.4s infinite',
+        /** Auth layout — CSS only (avoids Framer pointer-capture quirks on login/signup) */
+        'auth-shell': 'authShell 1.8s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards',
+        'auth-title': 'authTitle 2.2s cubic-bezier(0.16, 1, 0.36, 1) 0.1s forwards',
+        'auth-heading': 'authHeading 1s ease-out 0.5s forwards',
       },
       keyframes: {
+        authShell: {
+          '0%': { opacity: '0', transform: 'translateY(15px) scale(0.995)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        authTitle: {
+          '0%': { opacity: '0', letterSpacing: '0.1em', filter: 'blur(12px)' },
+          '100%': { opacity: '1', letterSpacing: '0.28em', filter: 'blur(0px)' },
+        },
+        authHeading: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
         fadeIn: {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
