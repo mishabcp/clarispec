@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     const { system, user: userPrompt } = getDocumentEditPrompt({
       documentContent,
       instruction,
-      selectedText,
+      selectedText: selectedText ?? undefined,
       documentType: documentType || 'document',
     })
 

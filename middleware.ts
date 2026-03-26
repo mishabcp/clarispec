@@ -29,11 +29,14 @@ async function hasValidAdminToken(token: string | undefined): Promise<boolean> {
       false,
       ['verify']
     )
+    const sigBytes = base64UrlToBytes(sig)
+    const payloadBytes = encoder.encode(payloadB64)
+    // Copy so backing buffer is a plain ArrayBuffer (strict DOM typings vs SharedArrayBuffer)
     const validSignature = await crypto.subtle.verify(
       'HMAC',
       key,
-      base64UrlToBytes(sig),
-      encoder.encode(payloadB64)
+      new Uint8Array(sigBytes),
+      new Uint8Array(payloadBytes)
     )
     if (!validSignature) return false
     const payloadJson = new TextDecoder().decode(base64UrlToBytes(payloadB64))

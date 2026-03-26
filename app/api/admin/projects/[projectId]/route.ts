@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/admin'
+import { projectIdFromParams } from '@/lib/route-params'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(
   _request: Request,
-  { params }: { params: { projectId: string } }
+  ctx: { params: Promise<{ projectId: string }> }
 ) {
   try {
     const session = await requireAdmin()
@@ -15,7 +16,7 @@ export async function GET(
     }
 
     const admin = createAdminClient()
-    const { projectId } = params
+    const projectId = await projectIdFromParams(ctx.params)
 
     const [
       { data: project },

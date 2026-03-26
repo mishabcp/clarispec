@@ -6,7 +6,7 @@ import { isSameOrigin } from '@/lib/security'
 
 export async function GET(
   _request: Request,
-  ctx: { params: { projectId: string } | Promise<{ projectId: string }> }
+  ctx: { params: Promise<{ projectId: string }> }
 ) {
   const projectId = await projectIdFromParams(ctx.params)
   const supabase = await createClient()
@@ -32,7 +32,7 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  ctx: { params: { projectId: string } | Promise<{ projectId: string }> }
+  ctx: { params: Promise<{ projectId: string }> }
 ) {
   const projectId = await projectIdFromParams(ctx.params)
   if (!isSameOrigin(request)) {
@@ -101,7 +101,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  ctx: { params: { projectId: string } | Promise<{ projectId: string }> }
+  ctx: { params: Promise<{ projectId: string }> }
 ) {
   const projectId = await projectIdFromParams(ctx.params)
   if (!isSameOrigin(request)) {

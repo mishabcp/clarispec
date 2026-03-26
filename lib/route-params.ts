@@ -1,10 +1,9 @@
 /**
- * Next.js App Router may pass `params` as a plain object or a Promise.
- * Reading `params.projectId` without awaiting breaks dynamic API routes (undefined id → 404).
+ * Next.js 16+ types dynamic route `params` as `Promise<{ ... }>` for route handlers.
  */
 export async function projectIdFromParams(
-  params: { projectId: string } | Promise<{ projectId: string }>
+  params: Promise<{ projectId: string }>
 ): Promise<string> {
-  const { projectId } = await Promise.resolve(params)
+  const { projectId } = await params
   return projectId
 }
