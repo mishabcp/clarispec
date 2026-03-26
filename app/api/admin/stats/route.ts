@@ -59,7 +59,7 @@ export async function GET() {
     })
 
     // Enrich recent projects with owner names
-    const ownerIds = [...new Set(recentProjects?.map(p => p.user_id) || [])]
+    const ownerIds = (recentProjects?.map(p => p.user_id) || []).filter((id, index, arr) => arr.indexOf(id) === index)
     const { data: owners } = ownerIds.length > 0
       ? await admin.from('profiles').select('id, full_name').in('id', ownerIds)
       : { data: [] }

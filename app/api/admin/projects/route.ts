@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     if (error) throw error
 
     const projectIds = projects?.map(p => p.id) || []
-    const ownerIds = [...new Set(projects?.map(p => p.user_id) || [])]
+    const ownerIds = (projects?.map(p => p.user_id) || []).filter((id, index, arr) => arr.indexOf(id) === index)
 
     const [{ data: owners }, { data: messageCounts }, { data: docCounts }] = await Promise.all([
       ownerIds.length > 0
