@@ -1,5 +1,3 @@
-import { AuthShellBreadcrumbs } from '@/components/auth/AuthShellBreadcrumbs'
-
 export default function AuthLayout({
   children,
 }: {
@@ -33,7 +31,6 @@ export default function AuthLayout({
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/[0.15] to-transparent shadow-[0_1px_4px_rgba(255,255,255,0.05)]" />
 
           <div className="p-10 sm:p-14">
-            <AuthShellBreadcrumbs />
             {children}
           </div>
         </div>
