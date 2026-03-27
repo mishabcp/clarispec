@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { loginBreadcrumb } from '@/lib/sentry-auth-breadcrumbs'
-import { appLogClient } from '@/lib/app-log-client'
+import { appLogClient, appLogClientAwait } from '@/lib/app-log-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -24,6 +24,15 @@ function emailMeta(raw: string) {
   return { length: trimmed.length, domain: domain || null }
 }
 
+/** Cookie names only (no values) — see if Supabase wrote storage after sign-in. */
+function supabaseCookieNamesInDocument(): string[] {
+  if (typeof document === 'undefined') return []
+  return document.cookie
+    .split(';')
+    .map((s) => s.split('=')[0]?.trim())
+    .filter((n): n is string => !!n && n.startsWith('sb-'))
+}
+
 export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -37,25 +46,28 @@ export function LoginForm() {
           .connection
       : undefined
 
-    appLogClient('info', 'login:mount', {
-      time: now(),
-      href: window.location.href,
-      visibilityState: document.visibilityState,
-    })
-    loginBreadcrumb('mount', {
-      path: window.location.pathname,
-      visibilityState: document.visibilityState,
-      onLine: navigator.onLine,
-      effectiveType: conn?.effectiveType,
-    })
+    void (async () => {
+      await appLogClientAwait('info', 'login:mount', {
+        time: now(),
+        href: window.location.href,
+        visibilityState: document.visibilityState,
+        sb_cookie_names: supabaseCookieNamesInDocument(),
+      })
+      loginBreadcrumb('mount', {
+        path: window.location.pathname,
+        visibilityState: document.visibilityState,
+        onLine: navigator.onLine,
+        effectiveType: conn?.effectiveType,
+      })
 
-    void supabase.auth.getSession().then(({ data, error: sessionError }) => {
-      appLogClient('info', 'login:getSession resolved', {
+      const { data, error: sessionError } = await supabase.auth.getSession()
+      await appLogClientAwait('info', 'login:getSession resolved', {
         time: now(),
         hasSession: !!data.session,
         userId: data.session?.user?.id ?? null,
         expiresAt: data.session?.expires_at ?? null,
         error: sessionError?.message ?? null,
+        sb_cookie_names: supabaseCookieNamesInDocument(),
       })
       loginBreadcrumb('getSession resolved', {
         hasSession: !!data.session,
@@ -63,13 +75,15 @@ export function LoginForm() {
         sessionError: sessionError?.message ?? null,
       })
       if (data.session?.user) {
-        appLogClient('info', 'login:session present → full navigation /dashboard', {
-          time: now(),
-        })
+        await appLogClientAwait(
+          'info',
+          'login:session present → full navigation /dashboard',
+          { time: now(), sb_cookie_names: supabaseCookieNamesInDocument() }
+        )
         loginBreadcrumb('session present → full navigation /dashboard')
         window.location.assign('/dashboard')
       }
-    })
+    })()
 
     const {
       data: { subscription },
@@ -122,7 +136,7 @@ export function LoginForm() {
     setError(null)
     setLoading(true)
 
-    appLogClient('info', 'login:signInWithPassword start', {
+    await appLogClientAwait('info', 'login:signInWithPassword start', {
       time: now(),
       email: emailMeta(email),
     })
@@ -136,11 +150,12 @@ export function LoginForm() {
     const elapsedMs = Math.round(performance.now() - started)
 
     if (signError) {
-      appLogClient('warn', 'login:signInWithPassword error', {
+      await appLogClientAwait('warn', 'login:signInWithPassword error', {
         time: now(),
         elapsedMs,
         message: signError.message,
         name: signError.name,
+        sb_cookie_names: supabaseCookieNamesInDocument(),
       })
       loginBreadcrumb('signInWithPassword error', {
         elapsedMs,
@@ -151,12 +166,26 @@ export function LoginForm() {
       return
     }
 
-    appLogClient('info', 'login:signInWithPassword ok', { time: now(), elapsedMs })
+    const { data: afterSignIn } = await supabase.auth.getSession()
+    await appLogClientAwait('info', 'login:post-signIn getSession', {
+      time: now(),
+      elapsedMs,
+      hasSession: !!afterSignIn.session,
+      userId: afterSignIn.session?.user?.id ?? null,
+      sb_cookie_names: supabaseCookieNamesInDocument(),
+    })
+
+    await appLogClientAwait('info', 'login:signInWithPassword ok', {
+      time: now(),
+      elapsedMs,
+    })
     loginBreadcrumb('signInWithPassword ok', { elapsedMs })
 
     // Full document load so auth cookies are always sent to middleware on /dashboard
-    // (client-side router navigation can race SSR session).
-    appLogClient('info', 'login:assign /dashboard (full navigation)', { time: now() })
+    await appLogClientAwait('info', 'login:assign /dashboard (full navigation)', {
+      time: now(),
+      sb_cookie_names: supabaseCookieNamesInDocument(),
+    })
     loginBreadcrumb('window.location.assign /dashboard')
     window.location.assign('/dashboard')
   }
