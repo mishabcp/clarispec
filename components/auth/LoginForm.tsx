@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { loginBreadcrumb } from '@/lib/sentry-auth-breadcrumbs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -34,10 +35,21 @@ export function LoginForm() {
   const supabase = createClient()
 
   useEffect(() => {
+    const conn = typeof navigator !== 'undefined' && 'connection' in navigator
+      ? (navigator as Navigator & { connection?: { effectiveType?: string } })
+          .connection
+      : undefined
+
     console.info(LOG, 'mount', {
       time: now(),
       href: window.location.href,
       visibilityState: document.visibilityState,
+    })
+    loginBreadcrumb('mount', {
+      path: window.location.pathname,
+      visibilityState: document.visibilityState,
+      onLine: navigator.onLine,
+      effectiveType: conn?.effectiveType,
     })
 
     void supabase.auth.getSession().then(({ data, error: sessionError }) => {
@@ -48,10 +60,16 @@ export function LoginForm() {
         expiresAt: data.session?.expires_at ?? null,
         error: sessionError?.message ?? null,
       })
+      loginBreadcrumb('getSession resolved', {
+        hasSession: !!data.session,
+        expiresAt: data.session?.expires_at ?? null,
+        sessionError: sessionError?.message ?? null,
+      })
       if (data.session?.user) {
         console.info(LOG, 'session present: router.replace → /dashboard', {
           time: now(),
         })
+        loginBreadcrumb('session present → replace /dashboard')
         router.replace('/dashboard')
       }
     })
@@ -65,6 +83,10 @@ export function LoginForm() {
         hasSession: !!session,
         userId: session?.user?.id ?? null,
       })
+      loginBreadcrumb('onAuthStateChange', {
+        event,
+        hasSession: !!session,
+      })
     })
 
     const onVis = () => {
@@ -72,13 +94,29 @@ export function LoginForm() {
         time: now(),
         visibilityState: document.visibilityState,
       })
+      loginBreadcrumb('visibilitychange', {
+        visibilityState: document.visibilityState,
+      })
     }
     document.addEventListener('visibilitychange', onVis)
 
+    const onOffline = () => {
+      loginBreadcrumb('offline')
+    }
+    window.addEventListener('offline', onOffline)
+
+    const onPageHide = (e: PageTransitionEvent) => {
+      loginBreadcrumb('pagehide', { persisted: e.persisted })
+    }
+    window.addEventListener('pagehide', onPageHide)
+
     return () => {
       document.removeEventListener('visibilitychange', onVis)
+      window.removeEventListener('offline', onOffline)
+      window.removeEventListener('pagehide', onPageHide)
       subscription.unsubscribe()
       console.info(LOG, 'unmount', { time: now() })
+      loginBreadcrumb('unmount')
     }
   }, [supabase, router])
 
@@ -91,6 +129,7 @@ export function LoginForm() {
       time: now(),
       email: emailMeta(email),
     })
+    loginBreadcrumb('signInWithPassword start', { email: emailMeta(email) })
 
     const started = performance.now()
     const { error: signError } = await supabase.auth.signInWithPassword({
@@ -106,6 +145,10 @@ export function LoginForm() {
         message: signError.message,
         name: signError.name,
       })
+      loginBreadcrumb('signInWithPassword error', {
+        elapsedMs,
+        name: signError.name,
+      })
       setError(signError.message)
       setLoading(false)
       return
@@ -113,15 +156,21 @@ export function LoginForm() {
 
     console.info(LOG, 'submit: signInWithPassword ok', { time: now(), elapsedMs })
     console.info(LOG, 'submit: router.push → /dashboard', { time: now() })
+    loginBreadcrumb('signInWithPassword ok', { elapsedMs })
+    loginBreadcrumb('router.push /dashboard')
 
     try {
       router.push('/dashboard')
       console.info(LOG, 'submit: router.push invoked (navigation scheduled)', {
         time: now(),
       })
+      loginBreadcrumb('router.push scheduled')
     } catch (navErr) {
       console.error(LOG, 'submit: router.push threw', {
         time: now(),
+        error: navErr instanceof Error ? navErr.message : String(navErr),
+      })
+      loginBreadcrumb('router.push threw', {
         error: navErr instanceof Error ? navErr.message : String(navErr),
       })
       throw navErr
