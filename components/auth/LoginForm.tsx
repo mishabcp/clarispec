@@ -8,11 +8,13 @@ import {
   authDebugLog,
   authDebugPauseBeforeRedirect,
   listSupabaseCookieNames,
+  syncAuthDebugFromUrl,
 } from '@/lib/auth-debug'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-react'
+import { AuthDebugPanel } from '@/components/auth/AuthDebugPanel'
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
@@ -39,6 +41,7 @@ export function LoginForm() {
     e.preventDefault()
     setError(null)
     setLoading(true)
+    syncAuthDebugFromUrl()
 
     authDebugLog('signInWithPassword: start', {
       email: email.trim(),
@@ -87,6 +90,7 @@ export function LoginForm() {
 
   return (
     <div className="space-y-10">
+      <AuthDebugPanel />
       <div className="space-y-2">
         <h2 className="text-2xl font-light text-white tracking-tight leading-none opacity-0 animate-auth-heading">
           Sign in

@@ -8,7 +8,9 @@ import {
   authDebugLog,
   authDebugPauseBeforeRedirect,
   listSupabaseCookieNames,
+  syncAuthDebugFromUrl,
 } from '@/lib/auth-debug'
+import { AuthDebugPanel } from '@/components/auth/AuthDebugPanel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -41,6 +43,7 @@ export function SignupForm() {
     e.preventDefault()
     setError(null)
     setLoading(true)
+    syncAuthDebugFromUrl()
 
     authDebugLog('signUp: start', {
       email: email.trim(),
@@ -99,6 +102,7 @@ export function SignupForm() {
 
   return (
     <div className="space-y-10">
+      <AuthDebugPanel />
       <div className="space-y-2">
         <h2 className="text-2xl font-light text-white tracking-tight leading-none opacity-0 animate-auth-heading">
           Create account
