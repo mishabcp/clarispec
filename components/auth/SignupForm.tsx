@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -18,6 +18,14 @@ export function SignupForm() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+
+  useEffect(() => {
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) {
+        router.replace('/dashboard')
+      }
+    })
+  }, [supabase, router])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -163,7 +171,7 @@ export function SignupForm() {
         <div className="pt-2 text-center">
           <p className="text-[10px] tracking-normal text-white/40 uppercase">
             Registered?{' '}
-            <Link href="/login" className="text-white/60 hover:text-white transition-all duration-300 ml-2 font-bold border-b border-white/10 hover:border-white/30 pb-0.5">
+            <Link prefetch={false} href="/login" className="text-white/60 hover:text-white transition-all duration-300 ml-2 font-bold border-b border-white/10 hover:border-white/30 pb-0.5">
               Sign in here
             </Link>
           </p>

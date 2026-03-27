@@ -48,6 +48,12 @@ export function LoginForm() {
         expiresAt: data.session?.expires_at ?? null,
         error: sessionError?.message ?? null,
       })
+      if (data.session?.user) {
+        console.info(LOG, 'session present: router.replace → /dashboard', {
+          time: now(),
+        })
+        router.replace('/dashboard')
+      }
     })
 
     const {
@@ -74,7 +80,7 @@ export function LoginForm() {
       subscription.unsubscribe()
       console.info(LOG, 'unmount', { time: now() })
     }
-  }, [supabase])
+  }, [supabase, router])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -200,7 +206,7 @@ export function LoginForm() {
         <div className="pt-2 text-center">
           <p className="text-[10px] tracking-normal text-white/40 uppercase">
             No access?{' '}
-            <Link href="/signup" className="text-white/60 hover:text-white transition-all duration-300 ml-2 font-bold border-b border-white/10 hover:border-white/30 pb-0.5">
+            <Link prefetch={false} href="/signup" className="text-white/60 hover:text-white transition-all duration-300 ml-2 font-bold border-b border-white/10 hover:border-white/30 pb-0.5">
               Create account
             </Link>
           </p>

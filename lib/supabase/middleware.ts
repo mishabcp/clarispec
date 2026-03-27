@@ -52,7 +52,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (user && (isAuthPage || isRootPage)) {
+  // Only redirect `/` for signed-in users. Do NOT redirect `/login` or `/signup` here:
+  // a middleware 307 on those routes races with the RSC Flight fetch in production and
+  // surfaces as unhandled `Error: Connection closed.` — auth pages redirect client-side.
+  if (user && isRootPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
