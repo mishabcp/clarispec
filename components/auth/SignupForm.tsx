@@ -57,7 +57,9 @@ export function SignupForm() {
       }, { onConflict: 'id' })
     }
 
+    router.refresh()
     router.push('/dashboard')
+    setLoading(false)
   }
 
   return (

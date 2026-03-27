@@ -41,7 +41,11 @@ export function LoginForm() {
       return
     }
 
+    // Sync auth cookies with the server before client navigation; otherwise proxy/middleware
+    // may still see "no user" and send you back to /login.
+    router.refresh()
     router.push('/dashboard')
+    setLoading(false)
   }
 
   return (
