@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -8,13 +8,11 @@ import {
   authDebugLog,
   authDebugPauseBeforeRedirect,
   listSupabaseCookieNames,
-  syncAuthDebugFromUrl,
 } from '@/lib/auth-debug'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-react'
-import { AuthDebugPanel } from '@/components/auth/AuthDebugPanel'
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
@@ -22,75 +20,101 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
+  const routerRef = useRef(router)
+  routerRef.current = router
 
+  const supabase = useMemo(() => createClient(), [])
+
+  /**
+   * If true, the mount-only getSession() must not call router.replace — otherwise a stale
+   * or re-ran effect fires right after signInWithPassword and jumps to /dashboard before
+   * handleSubmit's debug pause / router.push (same bug when [supabase, router] re-ran on each render).
+   */
+  const suppressBootstrapRedirectRef = useRef(false)
+
+  // Run once on mount: redirect only when the user already had a session (e.g. opened /login while logged in).
   useEffect(() => {
-    void supabase.auth.getSession().then(({ data }) => {
-      authDebugLog('mount getSession', {
+    let cancelled = false
+    const client = createClient()
+    void client.auth.getSession().then(({ data }) => {
+      if (cancelled || suppressBootstrapRedirectRef.current) {
+        authDebugLog('bootstrap getSession skipped', {
+          cancelled,
+          suppressed: suppressBootstrapRedirectRef.current,
+        })
+        return
+      }
+      authDebugLog('bootstrap getSession (mount-only)', {
         hasSession: Boolean(data.session),
         userId: data.session?.user?.id,
         sbCookieNames: listSupabaseCookieNames(),
       })
       if (data.session?.user) {
-        router.replace('/dashboard')
+        routerRef.current.replace('/dashboard')
       }
     })
-  }, [supabase, router])
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    suppressBootstrapRedirectRef.current = true
     setError(null)
     setLoading(true)
-    syncAuthDebugFromUrl()
 
-    authDebugLog('signInWithPassword: start', {
-      email: email.trim(),
-      supabaseHost: (() => {
-        try {
-          return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').host || '(unset)'
-        } catch {
-          return '(invalid NEXT_PUBLIC_SUPABASE_URL)'
-        }
-      })(),
-    })
+    try {
+      authDebugLog('signInWithPassword: start', {
+        email: email.trim(),
+        supabaseHost: (() => {
+          try {
+            return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').host || '(unset)'
+          } catch {
+            return '(invalid NEXT_PUBLIC_SUPABASE_URL)'
+          }
+        })(),
+      })
 
-    const { data: signData, error: signError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+      const { data: signData, error: signError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    authDebugLog('signInWithPassword: result', {
-      error: signError?.message ?? null,
-      hasSession: Boolean(signData.session),
-      userId: signData.user?.id,
-      expiresAt: signData.session?.expires_at ?? null,
-      sbCookieNamesAfter: listSupabaseCookieNames(),
-    })
+      authDebugLog('signInWithPassword: result', {
+        error: signError?.message ?? null,
+        hasSession: Boolean(signData.session),
+        userId: signData.user?.id,
+        expiresAt: signData.session?.expires_at ?? null,
+        sbCookieNamesAfter: listSupabaseCookieNames(),
+      })
 
-    if (signError) {
-      setError(signError.message)
+      if (signError) {
+        setError(signError.message)
+        setLoading(false)
+        return
+      }
+
+      const { data: afterSession } = await supabase.auth.getSession()
+      authDebugLog('getSession: after successful sign-in', {
+        hasSession: Boolean(afterSession.session),
+        sbCookieNames: listSupabaseCookieNames(),
+      })
+
+      // Sync auth cookies with the server before client navigation; otherwise proxy/middleware
+      // may still see "no user" and send you back to /login.
+      authDebugLog('router.refresh + pause + push /dashboard')
+      router.refresh()
+      await authDebugPauseBeforeRedirect()
+      router.push('/dashboard')
       setLoading(false)
-      return
+    } finally {
+      suppressBootstrapRedirectRef.current = false
     }
-
-    const { data: afterSession } = await supabase.auth.getSession()
-    authDebugLog('getSession: after successful sign-in', {
-      hasSession: Boolean(afterSession.session),
-      sbCookieNames: listSupabaseCookieNames(),
-    })
-
-    // Sync auth cookies with the server before client navigation; otherwise proxy/middleware
-    // may still see "no user" and send you back to /login.
-    authDebugLog('router.refresh + pause + push /dashboard')
-    router.refresh()
-    await authDebugPauseBeforeRedirect()
-    router.push('/dashboard')
-    setLoading(false)
   }
 
   return (
     <div className="space-y-10">
-      <AuthDebugPanel />
       <div className="space-y-2">
         <h2 className="text-2xl font-light text-white tracking-tight leading-none opacity-0 animate-auth-heading">
           Sign in

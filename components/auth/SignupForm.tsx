@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -8,9 +8,7 @@ import {
   authDebugLog,
   authDebugPauseBeforeRedirect,
   listSupabaseCookieNames,
-  syncAuthDebugFromUrl,
 } from '@/lib/auth-debug'
-import { AuthDebugPanel } from '@/components/auth/AuthDebugPanel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -24,85 +22,105 @@ export function SignupForm() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
+  const routerRef = useRef(router)
+  routerRef.current = router
+
+  const supabase = useMemo(() => createClient(), [])
+
+  const suppressBootstrapRedirectRef = useRef(false)
 
   useEffect(() => {
-    void supabase.auth.getSession().then(({ data }) => {
-      authDebugLog('signup mount getSession', {
+    let cancelled = false
+    const client = createClient()
+    void client.auth.getSession().then(({ data }) => {
+      if (cancelled || suppressBootstrapRedirectRef.current) {
+        authDebugLog('signup bootstrap getSession skipped', {
+          cancelled,
+          suppressed: suppressBootstrapRedirectRef.current,
+        })
+        return
+      }
+      authDebugLog('signup bootstrap getSession (mount-only)', {
         hasSession: Boolean(data.session),
         userId: data.session?.user?.id,
         sbCookieNames: listSupabaseCookieNames(),
       })
       if (data.session?.user) {
-        router.replace('/dashboard')
+        routerRef.current.replace('/dashboard')
       }
     })
-  }, [supabase, router])
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    suppressBootstrapRedirectRef.current = true
     setError(null)
     setLoading(true)
-    syncAuthDebugFromUrl()
 
-    authDebugLog('signUp: start', {
-      email: email.trim(),
-      supabaseHost: (() => {
-        try {
-          return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').host || '(unset)'
-        } catch {
-          return '(invalid NEXT_PUBLIC_SUPABASE_URL)'
-        }
-      })(),
-    })
+    try {
+      authDebugLog('signUp: start', {
+        email: email.trim(),
+        supabaseHost: (() => {
+          try {
+            return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').host || '(unset)'
+          } catch {
+            return '(invalid NEXT_PUBLIC_SUPABASE_URL)'
+          }
+        })(),
+      })
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            company_name: companyName,
+          },
+        },
+      })
+
+      authDebugLog('signUp: result', {
+        error: error?.message ?? null,
+        hasSession: Boolean(data.session),
+        userId: data.user?.id,
+        sbCookieNamesAfter: listSupabaseCookieNames(),
+      })
+
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+        return
+      }
+
+      if (data.user) {
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
           full_name: fullName,
           company_name: companyName,
-        },
-      },
-    })
+        }, { onConflict: 'id' })
+      }
 
-    authDebugLog('signUp: result', {
-      error: error?.message ?? null,
-      hasSession: Boolean(data.session),
-      userId: data.user?.id,
-      sbCookieNamesAfter: listSupabaseCookieNames(),
-    })
+      const { data: afterSession } = await supabase.auth.getSession()
+      authDebugLog('getSession: after sign-up', {
+        hasSession: Boolean(afterSession.session),
+        sbCookieNames: listSupabaseCookieNames(),
+      })
 
-    if (error) {
-      setError(error.message)
+      router.refresh()
+      await authDebugPauseBeforeRedirect()
+      router.push('/dashboard')
       setLoading(false)
-      return
+    } finally {
+      suppressBootstrapRedirectRef.current = false
     }
-
-    if (data.user) {
-      await supabase.from('profiles').upsert({
-        id: data.user.id,
-        full_name: fullName,
-        company_name: companyName,
-      }, { onConflict: 'id' })
-    }
-
-    const { data: afterSession } = await supabase.auth.getSession()
-    authDebugLog('getSession: after sign-up', {
-      hasSession: Boolean(afterSession.session),
-      sbCookieNames: listSupabaseCookieNames(),
-    })
-
-    router.refresh()
-    await authDebugPauseBeforeRedirect()
-    router.push('/dashboard')
-    setLoading(false)
   }
 
   return (
     <div className="space-y-10">
-      <AuthDebugPanel />
       <div className="space-y-2">
         <h2 className="text-2xl font-light text-white tracking-tight leading-none opacity-0 animate-auth-heading">
           Create account
