@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
-  authDebugLog,
   authDebugPauseBeforeRedirect,
+  authLog,
+  initAuthDebugFromUrl,
   listSupabaseCookieNames,
 } from '@/lib/auth-debug'
 import { Button } from '@/components/ui/button'
@@ -30,17 +31,21 @@ export function SignupForm() {
   const suppressBootstrapRedirectRef = useRef(false)
 
   useEffect(() => {
+    initAuthDebugFromUrl()
+  }, [])
+
+  useEffect(() => {
     let cancelled = false
     const client = createClient()
     void client.auth.getSession().then(({ data }) => {
       if (cancelled || suppressBootstrapRedirectRef.current) {
-        authDebugLog('signup bootstrap getSession skipped', {
+        authLog('signup:bootstrap_getSession_skipped', {
           cancelled,
           suppressed: suppressBootstrapRedirectRef.current,
         })
         return
       }
-      authDebugLog('signup bootstrap getSession (mount-only)', {
+      authLog('signup:bootstrap_getSession', {
         hasSession: Boolean(data.session),
         userId: data.session?.user?.id,
         sbCookieNames: listSupabaseCookieNames(),
@@ -61,7 +66,7 @@ export function SignupForm() {
     setLoading(true)
 
     try {
-      authDebugLog('signUp: start', {
+      authLog('signup:signUp_start', {
         email: email.trim(),
         supabaseHost: (() => {
           try {
@@ -83,7 +88,7 @@ export function SignupForm() {
         },
       })
 
-      authDebugLog('signUp: result', {
+      authLog('signup:signUp_result', {
         error: error?.message ?? null,
         hasSession: Boolean(data.session),
         userId: data.user?.id,
@@ -105,13 +110,14 @@ export function SignupForm() {
       }
 
       const { data: afterSession } = await supabase.auth.getSession()
-      authDebugLog('getSession: after sign-up', {
+      authLog('signup:getSession_after_sign_up', {
         hasSession: Boolean(afterSession.session),
         sbCookieNames: listSupabaseCookieNames(),
       })
 
       router.refresh()
       await authDebugPauseBeforeRedirect()
+      authLog('signup:router_push_dashboard', {})
       router.push('/dashboard')
       setLoading(false)
     } finally {

@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
-  authDebugLog,
   authDebugPauseBeforeRedirect,
+  authLog,
+  initAuthDebugFromUrl,
   listSupabaseCookieNames,
 } from '@/lib/auth-debug'
 import { Button } from '@/components/ui/button'
@@ -32,19 +33,23 @@ export function LoginForm() {
    */
   const suppressBootstrapRedirectRef = useRef(false)
 
+  useEffect(() => {
+    initAuthDebugFromUrl()
+  }, [])
+
   // Run once on mount: redirect only when the user already had a session (e.g. opened /login while logged in).
   useEffect(() => {
     let cancelled = false
     const client = createClient()
     void client.auth.getSession().then(({ data }) => {
       if (cancelled || suppressBootstrapRedirectRef.current) {
-        authDebugLog('bootstrap getSession skipped', {
+        authLog('login:bootstrap_getSession_skipped', {
           cancelled,
           suppressed: suppressBootstrapRedirectRef.current,
         })
         return
       }
-      authDebugLog('bootstrap getSession (mount-only)', {
+      authLog('login:bootstrap_getSession', {
         hasSession: Boolean(data.session),
         userId: data.session?.user?.id,
         sbCookieNames: listSupabaseCookieNames(),
@@ -65,7 +70,7 @@ export function LoginForm() {
     setLoading(true)
 
     try {
-      authDebugLog('signInWithPassword: start', {
+      authLog('login:signInWithPassword_start', {
         email: email.trim(),
         supabaseHost: (() => {
           try {
@@ -81,7 +86,7 @@ export function LoginForm() {
         password,
       })
 
-      authDebugLog('signInWithPassword: result', {
+      authLog('login:signInWithPassword_result', {
         error: signError?.message ?? null,
         hasSession: Boolean(signData.session),
         userId: signData.user?.id,
@@ -96,16 +101,17 @@ export function LoginForm() {
       }
 
       const { data: afterSession } = await supabase.auth.getSession()
-      authDebugLog('getSession: after successful sign-in', {
+      authLog('login:getSession_after_sign_in', {
         hasSession: Boolean(afterSession.session),
         sbCookieNames: listSupabaseCookieNames(),
       })
 
       // Sync auth cookies with the server before client navigation; otherwise proxy/middleware
       // may still see "no user" and send you back to /login.
-      authDebugLog('router.refresh + pause + push /dashboard')
+      authLog('login:before_refresh_pause_push', {})
       router.refresh()
       await authDebugPauseBeforeRedirect()
+      authLog('login:router_push_dashboard', {})
       router.push('/dashboard')
       setLoading(false)
     } finally {
