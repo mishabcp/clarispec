@@ -1,6 +1,8 @@
-import { redirect } from 'next/navigation'
-
-/** Server redirect avoids client-side navigation churn (can log "Connection closed" in some browsers). */
+/**
+ * `/` is handled in middleware: guests → /login, signed-in → /dashboard.
+ * Avoid `redirect()` here — RSC redirects during Flight decode are a known source of
+ * unhandled `Error: Connection closed.` in production bundles.
+ */
 export default function Home() {
-  redirect('/login')
+  return null
 }

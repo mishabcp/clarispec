@@ -16,7 +16,8 @@ function isBenignRealtimeSetAuthFailure(err: unknown): boolean {
       : err && typeof err === 'object' && 'message' in err
         ? String((err as { message: unknown }).message)
         : ''
-  return msg.trim() === 'Connection closed'
+  const t = msg.trim()
+  return t === 'Connection closed' || t === 'Connection closed.'
 }
 
 function patchRealtimeSetAuthUnhandledRejection(client: SupabaseClient) {

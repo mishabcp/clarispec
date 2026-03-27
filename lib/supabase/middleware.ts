@@ -44,7 +44,9 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/signup')
   const isRootPage = request.nextUrl.pathname === '/'
 
-  if (!user && !isAuthPage && !isRootPage) {
+  // Include `/` so unauthenticated visitors never hit `app/page.tsx` RSC `redirect()`.
+  // In-flight RSC redirects can surface as unhandled "Connection closed." in Flight.
+  if (!user && !isAuthPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
