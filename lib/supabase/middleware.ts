@@ -1,6 +1,13 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const proxyAuthDebug = process.env.AUTH_DEBUG_PROXY === '1'
+
+function logProxyAuth(pathname: string, detail: Record<string, unknown>) {
+  if (!proxyAuthDebug) return
+  console.log('[clarispec:proxy]', new Date().toISOString(), pathname, detail)
+}
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -38,7 +45,22 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  const sbCookieNames = request.cookies
+    .getAll()
+    .map((c) => c.name)
+    .filter((n) => n.startsWith('sb-'))
+
+  logProxyAuth(request.nextUrl.pathname, {
+    hasUser: Boolean(user),
+    getUserError: userError?.message ?? null,
+    sbCookieNames,
+    cookieHeaderLen: request.headers.get('cookie')?.length ?? 0,
+  })
 
   const isAuthPage = request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/signup')
@@ -46,6 +68,10 @@ export async function updateSession(request: NextRequest) {
 
   // Guests never hit `app/page.tsx` RSC (middleware sends them to /login).
   if (!user && !isAuthPage) {
+    logProxyAuth(request.nextUrl.pathname, {
+      action: 'redirect_guest_to_login',
+      sbCookieNames,
+    })
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)

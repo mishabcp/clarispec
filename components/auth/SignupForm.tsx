@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import {
+  authDebugLog,
+  authDebugPauseBeforeRedirect,
+  listSupabaseCookieNames,
+} from '@/lib/auth-debug'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,6 +26,11 @@ export function SignupForm() {
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
+      authDebugLog('signup mount getSession', {
+        hasSession: Boolean(data.session),
+        userId: data.session?.user?.id,
+        sbCookieNames: listSupabaseCookieNames(),
+      })
       if (data.session?.user) {
         router.replace('/dashboard')
       }
@@ -32,6 +42,17 @@ export function SignupForm() {
     setError(null)
     setLoading(true)
 
+    authDebugLog('signUp: start', {
+      email: email.trim(),
+      supabaseHost: (() => {
+        try {
+          return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').host || '(unset)'
+        } catch {
+          return '(invalid NEXT_PUBLIC_SUPABASE_URL)'
+        }
+      })(),
+    })
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -41,6 +62,13 @@ export function SignupForm() {
           company_name: companyName,
         },
       },
+    })
+
+    authDebugLog('signUp: result', {
+      error: error?.message ?? null,
+      hasSession: Boolean(data.session),
+      userId: data.user?.id,
+      sbCookieNamesAfter: listSupabaseCookieNames(),
     })
 
     if (error) {
@@ -57,7 +85,14 @@ export function SignupForm() {
       }, { onConflict: 'id' })
     }
 
+    const { data: afterSession } = await supabase.auth.getSession()
+    authDebugLog('getSession: after sign-up', {
+      hasSession: Boolean(afterSession.session),
+      sbCookieNames: listSupabaseCookieNames(),
+    })
+
     router.refresh()
+    await authDebugPauseBeforeRedirect()
     router.push('/dashboard')
     setLoading(false)
   }

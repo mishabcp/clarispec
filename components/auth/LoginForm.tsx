@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import {
+  authDebugLog,
+  authDebugPauseBeforeRedirect,
+  listSupabaseCookieNames,
+} from '@/lib/auth-debug'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,6 +24,11 @@ export function LoginForm() {
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
+      authDebugLog('mount getSession', {
+        hasSession: Boolean(data.session),
+        userId: data.session?.user?.id,
+        sbCookieNames: listSupabaseCookieNames(),
+      })
       if (data.session?.user) {
         router.replace('/dashboard')
       }
@@ -30,9 +40,28 @@ export function LoginForm() {
     setError(null)
     setLoading(true)
 
-    const { error: signError } = await supabase.auth.signInWithPassword({
+    authDebugLog('signInWithPassword: start', {
+      email: email.trim(),
+      supabaseHost: (() => {
+        try {
+          return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').host || '(unset)'
+        } catch {
+          return '(invalid NEXT_PUBLIC_SUPABASE_URL)'
+        }
+      })(),
+    })
+
+    const { data: signData, error: signError } = await supabase.auth.signInWithPassword({
       email,
       password,
+    })
+
+    authDebugLog('signInWithPassword: result', {
+      error: signError?.message ?? null,
+      hasSession: Boolean(signData.session),
+      userId: signData.user?.id,
+      expiresAt: signData.session?.expires_at ?? null,
+      sbCookieNamesAfter: listSupabaseCookieNames(),
     })
 
     if (signError) {
@@ -41,9 +70,17 @@ export function LoginForm() {
       return
     }
 
+    const { data: afterSession } = await supabase.auth.getSession()
+    authDebugLog('getSession: after successful sign-in', {
+      hasSession: Boolean(afterSession.session),
+      sbCookieNames: listSupabaseCookieNames(),
+    })
+
     // Sync auth cookies with the server before client navigation; otherwise proxy/middleware
     // may still see "no user" and send you back to /login.
+    authDebugLog('router.refresh + pause + push /dashboard')
     router.refresh()
+    await authDebugPauseBeforeRedirect()
     router.push('/dashboard')
     setLoading(false)
   }
