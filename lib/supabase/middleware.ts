@@ -55,16 +55,21 @@ export async function updateSession(request: NextRequest) {
     .map((c) => c.name)
     .filter((n) => n.startsWith('sb-'))
 
-  logProxyAuth(request.nextUrl.pathname, {
+  const pathname = request.nextUrl.pathname
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
+  const isRootPage = pathname === '/'
+
+  logProxyAuth(pathname, {
     hasUser: Boolean(user),
     getUserError: userError?.message ?? null,
     sbCookieNames,
     cookieHeaderLen: request.headers.get('cookie')?.length ?? 0,
+    ...(isAuthPage && !user
+      ? {
+          note: 'OK for guests: no cookies yet on /login|/signup. After sign-in, look for a /dashboard line — sbCookieNames should be non-empty and hasUser true.',
+        }
+      : {}),
   })
-
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/signup')
-  const isRootPage = request.nextUrl.pathname === '/'
 
   // Guests never hit `app/page.tsx` RSC (middleware sends them to /login).
   if (!user && !isAuthPage) {
