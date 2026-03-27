@@ -22,7 +22,6 @@ export function SignupForm() {
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) {
-        router.refresh()
         router.replace('/dashboard')
       }
     })
@@ -58,9 +57,7 @@ export function SignupForm() {
       }, { onConflict: 'id' })
     }
 
-    router.refresh()
     router.push('/dashboard')
-    setLoading(false)
   }
 
   return (
