@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useIsClient } from '@/lib/use-is-client'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -27,7 +26,6 @@ export function SignupForm() {
   const [loading, setLoading] = useState(false)
   const [debugEtaMs, setDebugEtaMs] = useState<number | null>(null)
   const [debugManualGate, setDebugManualGate] = useState(false)
-  const router = useRouter()
   const supabase = createClient()
   const isClient = useIsClient()
 
@@ -41,19 +39,16 @@ export function SignupForm() {
         sbCookieNames: listSupabaseCookieNames(),
       })
       if (data.session?.user && !isAuthDebugVerbose()) {
-        router.replace('/dashboard')
+        window.location.replace('/dashboard')
       }
     })
-  }, [supabase, router])
+  }, [supabase])
 
   const completeDebugNavigation = useCallback(() => {
     setDebugManualGate(false)
-    setLoading(true)
-    authDebugLog('signup manual: router.refresh + router.push /dashboard')
-    router.refresh()
-    router.push('/dashboard')
-    setLoading(false)
-  }, [router])
+    authDebugLog('signup manual: window.location.assign /dashboard')
+    window.location.assign('/dashboard')
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -110,11 +105,16 @@ export function SignupForm() {
       sbCookieNames: listSupabaseCookieNames(),
     })
 
-    authDebugLog('signup order: pause → refresh → push (or manual gate)')
+    const sbNames = listSupabaseCookieNames()
+    if (sbNames.length === 0) {
+      authDebugLog(
+        'WARN: no sb-* cookies after sign-up. If email confirmation is required you may have no session yet; otherwise check Supabase Auth URL config matches this origin.'
+      )
+    }
+
+    authDebugLog('signup order: pause → full navigation /dashboard (or manual gate)')
     await authDebugPauseBeforeRedirect((ms) => setDebugEtaMs(ms))
     setDebugEtaMs(null)
-
-    router.refresh()
 
     if (isAuthDebugManualRedirect()) {
       authDebugLog('signup manual redirect gate active — UI Continue required')
@@ -123,8 +123,7 @@ export function SignupForm() {
       return
     }
 
-    router.push('/dashboard')
-    setLoading(false)
+    window.location.assign('/dashboard')
   }
 
   return (

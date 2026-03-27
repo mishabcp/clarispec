@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useIsClient } from '@/lib/use-is-client'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -25,7 +24,6 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [debugEtaMs, setDebugEtaMs] = useState<number | null>(null)
   const [debugManualGate, setDebugManualGate] = useState(false)
-  const router = useRouter()
   const supabase = createClient()
   const isClient = useIsClient()
 
@@ -41,19 +39,17 @@ export function LoginForm() {
       // Verbose: never auto-redirect from this effect — `router.refresh()` after sign-in remounts
       // and would call `replace` immediately, bypassing `authDebugPauseBeforeRedirect` in submit.
       if (data.session?.user && !isAuthDebugVerbose()) {
-        router.replace('/dashboard')
+        // Full navigation so middleware receives sb-* cookies (router.replace can skip them on some hosts).
+        window.location.replace('/dashboard')
       }
     })
-  }, [supabase, router])
+  }, [supabase])
 
   const completeDebugNavigation = useCallback(() => {
     setDebugManualGate(false)
-    setLoading(true)
-    authDebugLog('manual: router.refresh + router.push /dashboard')
-    router.refresh()
-    router.push('/dashboard')
-    setLoading(false)
-  }, [router])
+    authDebugLog('manual: window.location.assign /dashboard')
+    window.location.assign('/dashboard')
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -97,12 +93,17 @@ export function LoginForm() {
       sbCookieNames: listSupabaseCookieNames(),
     })
 
-    // 1) Pause first (verbose only) so refresh cannot remount and effect-replace before the wait.
-    authDebugLog('order: pause → refresh → push (or manual gate)')
+    const sbNames = listSupabaseCookieNames()
+    if (sbNames.length === 0) {
+      authDebugLog(
+        'WARN: no sb-* cookies in document after sign-in. Server will see Auth session missing. Check Supabase Auth URL config (Site URL + Redirect URLs) matches this origin; ensure cookies are not blocked.'
+      )
+    }
+
+    // 1) Pause first (verbose only); 2) full page load so Cookie header includes Supabase cookies for proxy.getUser().
+    authDebugLog('order: pause → full navigation /dashboard (or manual gate)')
     await authDebugPauseBeforeRedirect((ms) => setDebugEtaMs(ms))
     setDebugEtaMs(null)
-
-    router.refresh()
 
     if (isAuthDebugManualRedirect()) {
       authDebugLog('manual redirect gate active — UI Continue required')
@@ -111,8 +112,7 @@ export function LoginForm() {
       return
     }
 
-    router.push('/dashboard')
-    setLoading(false)
+    window.location.assign('/dashboard')
   }
 
   return (
