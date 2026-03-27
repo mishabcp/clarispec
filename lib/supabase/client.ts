@@ -3,12 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 let browserClient: SupabaseClient | undefined
 
-/**
- * SupabaseClient syncs JWT to Realtime via realtime.setAuth() from onAuthStateChange
- * but does not await or .catch() that promise (unlike the initial accessToken path).
- * When the Realtime socket is closing, setAuth can reject with "Connection closed" —
- * a benign race, not an auth failure.
- */
+/** Swallow benign Realtime setAuth rejections when the socket is closing. */
 function isBenignRealtimeSetAuthFailure(err: unknown): boolean {
   const msg =
     err instanceof Error
@@ -30,7 +25,7 @@ function patchRealtimeSetAuthUnhandledRejection(client: SupabaseClient) {
     })
 }
 
-/** Single browser client — avoids multiple GoTrue instances and stray "Connection closed" noise. */
+/** Singleton browser Supabase client. */
 export function createClient() {
   if (!browserClient) {
     browserClient = createBrowserClient(

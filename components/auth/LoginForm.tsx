@@ -9,22 +9,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-react'
 
-const LOG = '[clarispec/login][client]'
-
-function now() {
-  return new Date().toISOString()
-}
-
-/** Safe for logs: no password, no full email. */
-function emailMeta(raw: string) {
-  const trimmed = raw.trim()
-  if (!trimmed.includes('@')) {
-    return { length: trimmed.length, domain: null as string | null }
-  }
-  const [, domain = ''] = trimmed.split('@')
-  return { length: trimmed.length, domain: domain || null }
-}
-
 export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -34,52 +18,11 @@ export function LoginForm() {
   const supabase = createClient()
 
   useEffect(() => {
-    console.info(LOG, 'mount', {
-      time: now(),
-      href: window.location.href,
-      visibilityState: document.visibilityState,
-    })
-
-    void supabase.auth.getSession().then(({ data, error: sessionError }) => {
-      console.info(LOG, 'getSession resolved', {
-        time: now(),
-        hasSession: !!data.session,
-        userId: data.session?.user?.id ?? null,
-        expiresAt: data.session?.expires_at ?? null,
-        error: sessionError?.message ?? null,
-      })
+    void supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) {
-        console.info(LOG, 'session present: router.replace → /dashboard', {
-          time: now(),
-        })
         router.replace('/dashboard')
       }
     })
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      console.info(LOG, 'onAuthStateChange', {
-        time: now(),
-        event,
-        hasSession: !!session,
-        userId: session?.user?.id ?? null,
-      })
-    })
-
-    const onVis = () => {
-      console.info(LOG, 'visibilitychange', {
-        time: now(),
-        visibilityState: document.visibilityState,
-      })
-    }
-    document.addEventListener('visibilitychange', onVis)
-
-    return () => {
-      document.removeEventListener('visibilitychange', onVis)
-      subscription.unsubscribe()
-      console.info(LOG, 'unmount', { time: now() })
-    }
   }, [supabase, router])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -87,45 +30,18 @@ export function LoginForm() {
     setError(null)
     setLoading(true)
 
-    console.info(LOG, 'submit: signInWithPassword start', {
-      time: now(),
-      email: emailMeta(email),
-    })
-
-    const started = performance.now()
     const { error: signError } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
-    const elapsedMs = Math.round(performance.now() - started)
 
     if (signError) {
-      console.warn(LOG, 'submit: signInWithPassword error', {
-        time: now(),
-        elapsedMs,
-        message: signError.message,
-        name: signError.name,
-      })
       setError(signError.message)
       setLoading(false)
       return
     }
 
-    console.info(LOG, 'submit: signInWithPassword ok', { time: now(), elapsedMs })
-    console.info(LOG, 'submit: router.push → /dashboard', { time: now() })
-
-    try {
-      router.push('/dashboard')
-      console.info(LOG, 'submit: router.push invoked (navigation scheduled)', {
-        time: now(),
-      })
-    } catch (navErr) {
-      console.error(LOG, 'submit: router.push threw', {
-        time: now(),
-        error: navErr instanceof Error ? navErr.message : String(navErr),
-      })
-      throw navErr
-    }
+    router.push('/dashboard')
   }
 
   return (
@@ -190,8 +106,8 @@ export function LoginForm() {
         </div>
 
         <div className="pt-4">
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className="group relative w-full h-11 bg-white text-black hover:bg-white/95 transition-all duration-300 font-bold text-[10px] uppercase tracking-widest rounded-none shadow-[0_4px_24px_rgba(255,255,255,0.08)] active:scale-[0.985] overflow-hidden"
             disabled={loading}
           >
@@ -215,7 +131,3 @@ export function LoginForm() {
     </div>
   )
 }
-
-
-
-

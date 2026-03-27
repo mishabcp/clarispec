@@ -44,17 +44,14 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/signup')
   const isRootPage = request.nextUrl.pathname === '/'
 
-  // Include `/` so unauthenticated visitors never hit `app/page.tsx` RSC `redirect()`.
-  // In-flight RSC redirects can surface as unhandled "Connection closed." in Flight.
+  // Guests never hit `app/page.tsx` RSC (middleware sends them to /login).
   if (!user && !isAuthPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  // Only redirect `/` for signed-in users. Do NOT redirect `/login` or `/signup` here:
-  // a middleware 307 on those routes races with the RSC Flight fetch in production and
-  // surfaces as unhandled `Error: Connection closed.` — auth pages redirect client-side.
+  // Signed-in users at `/` go to dashboard; `/login` and `/signup` redirect client-side only.
   if (user && isRootPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'

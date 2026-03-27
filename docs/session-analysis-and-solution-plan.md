@@ -4,19 +4,9 @@
 
 ---
 
-## 1. How to Run the Analysis Script
+## 1. Analysis script (removed)
 
-A script queries the database and writes results to `docs/session-analysis-results.json`.
-
-**Prerequisites:** `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
-
-**Command (from project root):**
-```bash
-node scripts/analyze-session.js
-```
-Or: `npm run analyze-session`
-
-Output: `docs/session-analysis-results.json` (project, messages, requirement_areas, counts). The script uses the Supabase JS client (no raw SQL).
+The one-off script that queried Supabase and wrote `docs/session-analysis-results.json` was removed after debugging. The captured results in this doc (section 2) remain for reference.
 
 ---
 
