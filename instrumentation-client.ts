@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/nextjs'
+import { beforeSendFlightConnectionClosed } from '@/lib/sentry-flight-connection-closed'
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -15,6 +16,9 @@ Sentry.init({
   ],
   replaysSessionSampleRate: 0.05,
   replaysOnErrorSampleRate: 1,
+  beforeSend(event) {
+    return beforeSendFlightConnectionClosed(event) as typeof event
+  },
 })
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart
