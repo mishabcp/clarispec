@@ -1,14 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { loginBreadcrumb } from '@/lib/sentry-auth-breadcrumbs'
-import { appLogClient } from '@/lib/app-log-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-react'
+
+const LOG = '[clarispec/login][client]'
 
 function now() {
   return new Date().toISOString()
@@ -29,6 +31,7 @@ export function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
@@ -37,7 +40,7 @@ export function LoginForm() {
           .connection
       : undefined
 
-    appLogClient('info', 'login:mount', {
+    console.info(LOG, 'mount', {
       time: now(),
       href: window.location.href,
       visibilityState: document.visibilityState,
@@ -50,7 +53,7 @@ export function LoginForm() {
     })
 
     void supabase.auth.getSession().then(({ data, error: sessionError }) => {
-      appLogClient('info', 'login:getSession resolved', {
+      console.info(LOG, 'getSession resolved', {
         time: now(),
         hasSession: !!data.session,
         userId: data.session?.user?.id ?? null,
@@ -63,18 +66,19 @@ export function LoginForm() {
         sessionError: sessionError?.message ?? null,
       })
       if (data.session?.user) {
-        appLogClient('info', 'login:session present → full navigation /dashboard', {
+        console.info(LOG, 'session present: refresh + replace → /dashboard', {
           time: now(),
         })
-        loginBreadcrumb('session present → full navigation /dashboard')
-        window.location.assign('/dashboard')
+        loginBreadcrumb('session present → refresh + replace /dashboard')
+        router.refresh()
+        router.replace('/dashboard')
       }
     })
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      appLogClient('info', 'login:onAuthStateChange', {
+      console.info(LOG, 'onAuthStateChange', {
         time: now(),
         event,
         hasSession: !!session,
@@ -87,7 +91,7 @@ export function LoginForm() {
     })
 
     const onVis = () => {
-      appLogClient('debug', 'login:visibilitychange', {
+      console.info(LOG, 'visibilitychange', {
         time: now(),
         visibilityState: document.visibilityState,
       })
@@ -112,17 +116,17 @@ export function LoginForm() {
       window.removeEventListener('offline', onOffline)
       window.removeEventListener('pagehide', onPageHide)
       subscription.unsubscribe()
-      appLogClient('debug', 'login:unmount', { time: now() })
+      console.info(LOG, 'unmount', { time: now() })
       loginBreadcrumb('unmount')
     }
-  }, [supabase])
+  }, [supabase, router])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
-    appLogClient('info', 'login:signInWithPassword start', {
+    console.info(LOG, 'submit: signInWithPassword start', {
       time: now(),
       email: emailMeta(email),
     })
@@ -136,7 +140,7 @@ export function LoginForm() {
     const elapsedMs = Math.round(performance.now() - started)
 
     if (signError) {
-      appLogClient('warn', 'login:signInWithPassword error', {
+      console.warn(LOG, 'submit: signInWithPassword error', {
         time: now(),
         elapsedMs,
         message: signError.message,
@@ -151,14 +155,29 @@ export function LoginForm() {
       return
     }
 
-    appLogClient('info', 'login:signInWithPassword ok', { time: now(), elapsedMs })
+    console.info(LOG, 'submit: signInWithPassword ok', { time: now(), elapsedMs })
+    console.info(LOG, 'submit: refresh + replace → /dashboard', { time: now() })
     loginBreadcrumb('signInWithPassword ok', { elapsedMs })
+    loginBreadcrumb('router.refresh + replace /dashboard')
 
-    // Full document load so auth cookies are always sent to middleware on /dashboard
-    // (client-side router navigation can race SSR session).
-    appLogClient('info', 'login:assign /dashboard (full navigation)', { time: now() })
-    loginBreadcrumb('window.location.assign /dashboard')
-    window.location.assign('/dashboard')
+    try {
+      // Sync server/middleware session before RSC navigation (Supabase SSR + proxy).
+      router.refresh()
+      router.replace('/dashboard')
+      setLoading(false)
+      console.info(LOG, 'submit: navigation scheduled', { time: now() })
+      loginBreadcrumb('navigation scheduled')
+    } catch (navErr) {
+      console.error(LOG, 'submit: navigation threw', {
+        time: now(),
+        error: navErr instanceof Error ? navErr.message : String(navErr),
+      })
+      loginBreadcrumb('navigation threw', {
+        error: navErr instanceof Error ? navErr.message : String(navErr),
+      })
+      setLoading(false)
+      setError('Could not open dashboard. Try again.')
+    }
   }
 
   return (
