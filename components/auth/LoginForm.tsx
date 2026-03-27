@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -8,6 +8,22 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-react'
+
+const LOG = '[clarispec/login][client]'
+
+function now() {
+  return new Date().toISOString()
+}
+
+/** Safe for logs: no password, no full email. */
+function emailMeta(raw: string) {
+  const trimmed = raw.trim()
+  if (!trimmed.includes('@')) {
+    return { length: trimmed.length, domain: null as string | null }
+  }
+  const [, domain = ''] = trimmed.split('@')
+  return { length: trimmed.length, domain: domain || null }
+}
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
@@ -17,23 +33,93 @@ export function LoginForm() {
   const router = useRouter()
   const supabase = createClient()
 
+  useEffect(() => {
+    console.info(LOG, 'mount', {
+      time: now(),
+      href: window.location.href,
+      visibilityState: document.visibilityState,
+    })
+
+    void supabase.auth.getSession().then(({ data, error: sessionError }) => {
+      console.info(LOG, 'getSession resolved', {
+        time: now(),
+        hasSession: !!data.session,
+        userId: data.session?.user?.id ?? null,
+        expiresAt: data.session?.expires_at ?? null,
+        error: sessionError?.message ?? null,
+      })
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.info(LOG, 'onAuthStateChange', {
+        time: now(),
+        event,
+        hasSession: !!session,
+        userId: session?.user?.id ?? null,
+      })
+    })
+
+    const onVis = () => {
+      console.info(LOG, 'visibilitychange', {
+        time: now(),
+        visibilityState: document.visibilityState,
+      })
+    }
+    document.addEventListener('visibilitychange', onVis)
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVis)
+      subscription.unsubscribe()
+      console.info(LOG, 'unmount', { time: now() })
+    }
+  }, [supabase])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({
+    console.info(LOG, 'submit: signInWithPassword start', {
+      time: now(),
+      email: emailMeta(email),
+    })
+
+    const started = performance.now()
+    const { error: signError } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
+    const elapsedMs = Math.round(performance.now() - started)
 
-    if (error) {
-      setError(error.message)
+    if (signError) {
+      console.warn(LOG, 'submit: signInWithPassword error', {
+        time: now(),
+        elapsedMs,
+        message: signError.message,
+        name: signError.name,
+      })
+      setError(signError.message)
       setLoading(false)
       return
     }
 
-    router.push('/dashboard')
+    console.info(LOG, 'submit: signInWithPassword ok', { time: now(), elapsedMs })
+    console.info(LOG, 'submit: router.push → /dashboard', { time: now() })
+
+    try {
+      router.push('/dashboard')
+      console.info(LOG, 'submit: router.push invoked (navigation scheduled)', {
+        time: now(),
+      })
+    } catch (navErr) {
+      console.error(LOG, 'submit: router.push threw', {
+        time: now(),
+        error: navErr instanceof Error ? navErr.message : String(navErr),
+      })
+      throw navErr
+    }
   }
 
   return (
