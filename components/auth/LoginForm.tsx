@@ -66,10 +66,11 @@ export function LoginForm() {
         sessionError: sessionError?.message ?? null,
       })
       if (data.session?.user) {
-        console.info(LOG, 'session present: router.replace → /dashboard', {
+        console.info(LOG, 'session present: refresh + replace → /dashboard', {
           time: now(),
         })
-        loginBreadcrumb('session present → replace /dashboard')
+        loginBreadcrumb('session present → refresh + replace /dashboard')
+        router.refresh()
         router.replace('/dashboard')
       }
     })
@@ -155,25 +156,27 @@ export function LoginForm() {
     }
 
     console.info(LOG, 'submit: signInWithPassword ok', { time: now(), elapsedMs })
-    console.info(LOG, 'submit: router.push → /dashboard', { time: now() })
+    console.info(LOG, 'submit: refresh + replace → /dashboard', { time: now() })
     loginBreadcrumb('signInWithPassword ok', { elapsedMs })
-    loginBreadcrumb('router.push /dashboard')
+    loginBreadcrumb('router.refresh + replace /dashboard')
 
     try {
-      router.push('/dashboard')
-      console.info(LOG, 'submit: router.push invoked (navigation scheduled)', {
-        time: now(),
-      })
-      loginBreadcrumb('router.push scheduled')
+      // Sync server/middleware session before RSC navigation (Supabase SSR + proxy).
+      router.refresh()
+      router.replace('/dashboard')
+      setLoading(false)
+      console.info(LOG, 'submit: navigation scheduled', { time: now() })
+      loginBreadcrumb('navigation scheduled')
     } catch (navErr) {
-      console.error(LOG, 'submit: router.push threw', {
+      console.error(LOG, 'submit: navigation threw', {
         time: now(),
         error: navErr instanceof Error ? navErr.message : String(navErr),
       })
-      loginBreadcrumb('router.push threw', {
+      loginBreadcrumb('navigation threw', {
         error: navErr instanceof Error ? navErr.message : String(navErr),
       })
-      throw navErr
+      setLoading(false)
+      setError('Could not open dashboard. Try again.')
     }
   }
 
