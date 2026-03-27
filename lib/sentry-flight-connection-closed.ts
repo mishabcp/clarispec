@@ -11,17 +11,9 @@ type MinimalEvent = {
   exception?: {
     values?: Array<{
       value?: string
-      mechanism?: { type?: string }
-      stacktrace?: {
-        frames?: Array<{
-          filename?: string
-          abs_path?: string
-          module?: string
-        }>
-      }
+      stacktrace?: { frames?: Array<{ filename?: string }> }
     }>
   }
-  transaction?: string
   request?: {
     url?: string
     headers?: Record<string, string> | Array<[string, string]>
@@ -29,43 +21,13 @@ type MinimalEvent = {
   tags?: Record<string, unknown>
 }
 
-function frameBlob(f: {
-  filename?: string
-  abs_path?: string
-  module?: string
-}): string {
-  return [f.filename, f.abs_path, f.module].filter(Boolean).join(' ')
-}
-
-/**
- * Must match before symbolication: the browser often sends chunk names like
- * `8105-….js`, not `react-server-dom-webpack-client…` (that appears after ingest).
- */
 function isFlightConnectionClosed(event: MinimalEvent): boolean {
   const ex = event.exception?.values?.[0]
   if (ex?.value !== 'Connection closed.') return false
-
   const frames = ex.stacktrace?.frames ?? []
-  for (const f of frames) {
-    const blob = frameBlob(f)
-    if (blob.includes('react-server-dom-webpack-client')) return true
-    if (blob.includes('react-server-dom')) return true
-  }
-
-  const mech = ex.mechanism?.type
-  const onLogin =
-    event.transaction === '/login' ||
-    (typeof event.tags?.url === 'string' && event.tags.url.includes('/login'))
-
-  if (
-    mech === 'auto.browser.global_handlers.onunhandledrejection' &&
-    onLogin &&
-    frames.length > 0
-  ) {
-    return true
-  }
-
-  return false
+  return frames.some((f) =>
+    (f.filename ?? '').includes('react-server-dom-webpack-client')
+  )
 }
 
 function headerUserAgent(event: MinimalEvent): string | undefined {
