@@ -31,6 +31,10 @@ export function LoginForm() {
   const showDebugUi = isClient && isAuthDebugVerbose()
 
   useEffect(() => {
+    console.warn('[clarispec /login] LoginForm mounted (same route as app/(auth)/login/page.tsx)')
+  }, [])
+
+  useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
       authDebugLog('mount getSession', {
         hasSession: Boolean(data.session),
