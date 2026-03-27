@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { appLogClient } from '@/lib/app-log-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,22 +16,22 @@ export function SignupForm() {
   const [companyName, setCompanyName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) {
-        router.refresh()
-        router.replace('/dashboard')
+        appLogClient('info', 'signup:existing session → /dashboard', {})
+        window.location.assign('/dashboard')
       }
     })
-  }, [supabase, router])
+  }, [supabase])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
+    appLogClient('info', 'signup:submit start', {})
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -45,6 +45,7 @@ export function SignupForm() {
     })
 
     if (error) {
+      appLogClient('warn', 'signup:signUp error', { message: error.message })
       setError(error.message)
       setLoading(false)
       return
@@ -58,9 +59,8 @@ export function SignupForm() {
       }, { onConflict: 'id' })
     }
 
-    router.refresh()
-    router.push('/dashboard')
-    setLoading(false)
+    appLogClient('info', 'signup:ok → /dashboard', { hasUser: !!data.user })
+    window.location.assign('/dashboard')
   }
 
   return (

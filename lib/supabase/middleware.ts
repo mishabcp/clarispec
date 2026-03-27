@@ -1,23 +1,9 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { ingestAppLogPayload } from '@/lib/app-log-ingest'
 
-/** Set DEBUG_AUTH_MIDDLEWARE=true (Vercel env) → Runtime / Edge logs; no secrets logged. */
-function debugAuth(
-  request: NextRequest,
-  payload: Record<string, unknown>
-): void {
-  if (process.env.DEBUG_AUTH_MIDDLEWARE !== 'true') return
-  const sbCookieCount = request.cookies
-    .getAll()
-    .filter((c) => c.name.startsWith('sb-')).length
-  console.info(
-    '[clarispec/proxy-auth]',
-    JSON.stringify({
-      ...payload,
-      path: request.nextUrl.pathname,
-      sbCookieCount,
-    })
-  )
+function edgeRelease(): string | null {
+  return process.env.VERCEL_GIT_COMMIT_SHA ?? null
 }
 
 export async function updateSession(request: NextRequest) {
@@ -59,23 +45,38 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/signup')
-  const isRootPage = request.nextUrl.pathname === '/'
+  const path = request.nextUrl.pathname
+  const isAuthPage = path.startsWith('/login') ||
+    path.startsWith('/signup')
+  const isRootPage = path === '/'
 
-  debugAuth(request, {
-    phase: 'after_getUser',
-    hasUser: !!user,
-    isAuthPage,
-    isRootPage,
-  })
+  const ua = request.headers.get('user-agent')
+  const logAuth = path === '/login' || path === '/signup' || path === '/dashboard'
+  if (logAuth) {
+    void ingestAppLogPayload({
+      source: 'edge',
+      level: 'debug',
+      message: 'proxy:session check',
+      context: { pathname: path, hasUser: !!user },
+      path,
+      user_agent: ua,
+      release: edgeRelease(),
+      user_id: user?.id ?? null,
+    })
+  }
 
   // Include `/` so unauthenticated visitors never hit `app/page.tsx` RSC `redirect()`.
   // In-flight RSC redirects can surface as unhandled "Connection closed." in Flight.
   if (!user && !isAuthPage) {
-    debugAuth(request, {
-      phase: 'redirect_to_login',
-      reason: 'no_session_middleware',
+    void ingestAppLogPayload({
+      source: 'edge',
+      level: 'warn',
+      message: 'proxy:redirect guest → /login',
+      context: { from: path },
+      path,
+      user_agent: ua,
+      release: edgeRelease(),
+      user_id: null,
     })
     const url = request.nextUrl.clone()
     url.pathname = '/login'

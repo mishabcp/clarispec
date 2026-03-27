@@ -1,10 +1,12 @@
 import { LoginForm } from '@/components/auth/LoginForm'
+import { writeAppLogServer } from '@/lib/app-log-write-server'
 
-const LOG = '[clarispec/login][server]'
-
-export default function LoginPage() {
-  console.info(LOG, 'LoginPage render', {
-    time: new Date().toISOString(),
-  })
+export default async function LoginPage() {
+  await writeAppLogServer(
+    'info',
+    'login:LoginPage render',
+    { ts: new Date().toISOString() },
+    '/login'
+  )
   return <LoginForm />
 }

@@ -1,5 +1,8 @@
 import * as Sentry from '@sentry/nextjs'
 import { beforeSendFlightConnectionClosed } from '@/lib/sentry-flight-connection-closed'
+import { installConsoleForwardToAppLogs } from '@/lib/app-log-console-capture'
+
+installConsoleForwardToAppLogs()
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
