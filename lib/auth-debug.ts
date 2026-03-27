@@ -120,6 +120,17 @@ export function getAuthDebugPanelServerSnapshot(): readonly string[] {
   return []
 }
 
+/** Raw `document.cookie` size (no values logged elsewhere). */
+export function documentCookieStats(): { rawLength: number; pairCount: number } {
+  if (typeof document === 'undefined') return { rawLength: 0, pairCount: 0 }
+  const raw = document.cookie
+  if (!raw.trim()) return { rawLength: 0, pairCount: 0 }
+  return {
+    rawLength: raw.length,
+    pairCount: raw.split(';').filter((s) => s.trim()).length,
+  }
+}
+
 /** Names of Supabase auth cookies (no values). */
 export function listSupabaseCookieNames(): string[] {
   if (typeof document === 'undefined') return []

@@ -1,4 +1,5 @@
 import { updateSession } from '@/lib/supabase/middleware'
+import { logProxyDebug } from '@/lib/proxy-debug'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const ADMIN_SESSION_COOKIE = 'clarispec_admin_session'
@@ -50,11 +51,15 @@ async function hasValidAdminToken(token: string | undefined): Promise<boolean> {
 
 export async function proxy(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/admin')) {
+    logProxyDebug('branch:admin', request, {
+      hasAdminSessionCookie: Boolean(request.cookies.get(ADMIN_SESSION_COOKIE)?.value),
+    })
     const isAdminLogin = request.nextUrl.pathname === '/admin/login'
     if (!isAdminLogin) {
       const adminCookie = request.cookies.get(ADMIN_SESSION_COOKIE)?.value
       const valid = await hasValidAdminToken(adminCookie)
       if (!valid) {
+        logProxyDebug('action:redirect_admin_to_login', request, { adminTokenValid: false })
         const url = request.nextUrl.clone()
         url.pathname = '/admin/login'
         return NextResponse.redirect(url)
@@ -63,6 +68,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
+  logProxyDebug('branch:app→updateSession', request, {})
   return await updateSession(request)
 }
 

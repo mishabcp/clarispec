@@ -1,12 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-
-const proxyAuthDebug = process.env.AUTH_DEBUG_PROXY === '1'
-
-function logProxyAuth(pathname: string, detail: Record<string, unknown>) {
-  if (!proxyAuthDebug) return
-  console.log('[clarispec:proxy]', new Date().toISOString(), pathname, detail)
-}
+import { logProxyDebug } from '@/lib/proxy-debug'
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
@@ -59,22 +53,35 @@ export async function updateSession(request: NextRequest) {
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
   const isRootPage = pathname === '/'
 
-  logProxyAuth(pathname, {
+  const sessionDetail: Record<string, unknown> = {
+    phase: 'updateSession',
     hasUser: Boolean(user),
+    userId: user?.id ?? null,
     getUserError: userError?.message ?? null,
-    sbCookieNames,
-    cookieHeaderLen: request.headers.get('cookie')?.length ?? 0,
-    ...(isAuthPage && !user
-      ? {
-          note: 'OK for guests: no cookies yet on /login|/signup. After sign-in, look for a /dashboard line — sbCookieNames should be non-empty and hasUser true.',
-        }
-      : {}),
-  })
+    isAuthPage,
+    isRootPage,
+  }
+
+  if (isAuthPage && !user) {
+    sessionDetail.note =
+      'OK for guests on /login|/signup: no session cookie yet. After successful sign-in you should see phase updateSession on /dashboard with sbCookieNames non-empty.'
+  }
+
+  if (pathname === '/dashboard' && !user) {
+    sessionDetail.diagnosticHints = [
+      'If you just signed in: browser did not send sb-* cookies. Check Application → Cookies for this origin; Supabase Auth Site URL must match window location origin (www vs apex).',
+      'Confirm Vercel env NEXT_PUBLIC_SUPABASE_URL / ANON_KEY match your Supabase project (Dashboard → Settings → API).',
+      'Try another browser or disable extensions blocking cookies.',
+    ]
+  }
+
+  logProxyDebug(`path:${pathname}`, request, sessionDetail)
 
   // Guests never hit `app/page.tsx` RSC (middleware sends them to /login).
   if (!user && !isAuthPage) {
-    logProxyAuth(request.nextUrl.pathname, {
-      action: 'redirect_guest_to_login',
+    logProxyDebug('action:redirect_guest_to_login', request, {
+      fromPath: pathname,
+      reason: 'getUser returned no user on a protected route',
       sbCookieNames,
     })
     const url = request.nextUrl.clone()

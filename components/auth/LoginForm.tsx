@@ -9,6 +9,7 @@ import {
   authDebugPauseBeforeRedirect,
   isAuthDebugManualRedirect,
   isAuthDebugVerbose,
+  documentCookieStats,
   listSupabaseCookieNames,
 } from '@/lib/auth-debug'
 import { AuthDebugUi } from '@/components/auth/AuthDebugUi'
@@ -59,13 +60,16 @@ export function LoginForm() {
 
     authDebugLog('signInWithPassword: start', {
       email: email.trim(),
-      supabaseHost: (() => {
+      pageOrigin: window.location.origin,
+      pagePath: window.location.pathname,
+      supabaseApiHost: (() => {
         try {
           return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').host || '(unset)'
         } catch {
           return '(invalid NEXT_PUBLIC_SUPABASE_URL)'
         }
       })(),
+      documentCookieStatsBefore: documentCookieStats(),
     })
 
     const { data: signData, error: signError } = await supabase.auth.signInWithPassword({
@@ -75,13 +79,19 @@ export function LoginForm() {
 
     authDebugLog('signInWithPassword: result', {
       error: signError?.message ?? null,
+      errorCode: signError && 'code' in signError ? String(signError.code) : null,
+      errorStatus: signError && 'status' in signError ? (signError as { status?: number }).status : null,
       hasSession: Boolean(signData.session),
       userId: signData.user?.id,
       expiresAt: signData.session?.expires_at ?? null,
       sbCookieNamesAfter: listSupabaseCookieNames(),
+      documentCookieStatsAfter: documentCookieStats(),
     })
 
     if (signError) {
+      authDebugLog('signInWithPassword: failed — stays on /login', {
+        hint: 'If invalid credentials, Supabase returns an error above. If email not confirmed, sign-in may be blocked until confirmation.',
+      })
       setError(signError.message)
       setLoading(false)
       return
@@ -91,6 +101,7 @@ export function LoginForm() {
     authDebugLog('getSession: after successful sign-in', {
       hasSession: Boolean(afterSession.session),
       sbCookieNames: listSupabaseCookieNames(),
+      documentCookieStats: documentCookieStats(),
     })
 
     const sbNames = listSupabaseCookieNames()
@@ -112,6 +123,10 @@ export function LoginForm() {
       return
     }
 
+    authDebugLog('navigating: window.location.assign(/dashboard)', {
+      sbCookieNames: listSupabaseCookieNames(),
+      documentCookieStats: documentCookieStats(),
+    })
     window.location.assign('/dashboard')
   }
 
