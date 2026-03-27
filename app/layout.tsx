@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import { AuthTraceSink } from '@/components/auth/AuthTraceSink'
 
 export const metadata: Metadata = {
   title: 'Clarispec — AI-Powered Requirements Engineering',
@@ -18,7 +17,6 @@ export default function RootLayout({
         className="min-h-screen bg-navy antialiased"
         suppressHydrationWarning
       >
-        <AuthTraceSink />
         {children}
       </body>
     </html>
