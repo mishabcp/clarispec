@@ -51,29 +51,13 @@ export async function updateSession(request: NextRequest) {
   const isRootPage = path === '/'
 
   const ua = request.headers.get('user-agent')
-  const supabaseCookieNames = request.cookies
-    .getAll()
-    .map((c) => c.name)
-    .filter((n) => n.startsWith('sb-') || n.includes('supabase'))
-
-  const logAuth =
-    path === '/login' ||
-    path === '/signup' ||
-    path === '/dashboard' ||
-    path.startsWith('/dashboard/')
-
+  const logAuth = path === '/login' || path === '/signup' || path === '/dashboard'
   if (logAuth) {
     void ingestAppLogPayload({
       source: 'edge',
       level: 'debug',
       message: 'proxy:session check',
-      context: {
-        pathname: path,
-        hasUser: !!user,
-        supabase_cookie_names: supabaseCookieNames.length
-          ? supabaseCookieNames
-          : ['(none)'],
-      },
+      context: { pathname: path, hasUser: !!user },
       path,
       user_agent: ua,
       release: edgeRelease(),
@@ -84,25 +68,11 @@ export async function updateSession(request: NextRequest) {
   // Include `/` so unauthenticated visitors never hit `app/page.tsx` RSC `redirect()`.
   // In-flight RSC redirects can surface as unhandled "Connection closed." in Flight.
   if (!user && !isAuthPage) {
-    const protectedApp =
-      path.startsWith('/dashboard') ||
-      path.startsWith('/projects') ||
-      path.startsWith('/settings')
     void ingestAppLogPayload({
       source: 'edge',
       level: 'warn',
-      message: protectedApp
-        ? 'proxy:login_diag blocked — no session for protected route'
-        : 'proxy:redirect guest → /login',
-      context: {
-        from: path,
-        why: protectedApp
-          ? 'getUser() found no user; middleware sends you to /login. Typical causes: session cookie not set yet, wrong Site / domain, expired JWT, or third-party cookies blocked.'
-          : 'Unauthenticated request to non-auth page.',
-        supabase_cookie_names: supabaseCookieNames.length
-          ? supabaseCookieNames
-          : ['(none)'],
-      },
+      message: 'proxy:redirect guest → /login',
+      context: { from: path },
       path,
       user_agent: ua,
       release: edgeRelease(),
