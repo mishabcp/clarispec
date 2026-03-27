@@ -58,6 +58,8 @@ export function LoginForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    // Always visible in Console (not gated by auth debug flags). If you never see this, onSubmit did not run.
+    console.warn('[clarispec] login: submit handler running — next step is signInWithPassword → network call to *.supabase.co')
     setError(null)
     setLoading(true)
     setDebugManualGate(false)
@@ -76,10 +78,21 @@ export function LoginForm() {
       documentCookieStatsBefore: documentCookieStats(),
     })
 
-    const { data: signData, error: signError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    let signData: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>['data']
+    let signError: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>['error']
+    try {
+      const out = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      signData = out.data
+      signError = out.error
+    } catch (err) {
+      console.error('[clarispec] login: signInWithPassword threw before/after fetch', err)
+      setError(err instanceof Error ? err.message : 'Sign-in failed unexpectedly.')
+      setLoading(false)
+      return
+    }
 
     authDebugLog('signInWithPassword: result', {
       error: signError?.message ?? null,
@@ -142,7 +155,8 @@ export function LoginForm() {
         </h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* noValidate: otherwise the browser can block submit (invalid email format, etc.) without firing onSubmit — no Supabase request in Network/HAR */}
+      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         {error && (
           <div
             role="alert"
