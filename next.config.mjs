@@ -40,11 +40,16 @@ const nextConfig = {
   },
 }
 
+/** Source map / release upload only runs with a token; keep logs quiet otherwise. */
+const sentryUploadConfigured = Boolean(process.env.SENTRY_AUTH_TOKEN)
+
 export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
-  silent: !process.env.CI,
+  // No token: suppress "Will not upload source maps" spam. With token + CI: show upload progress.
+  silent: !sentryUploadConfigured || !process.env.CI,
+  telemetry: false,
   widenClientFileUpload: true,
   tunnelRoute: '/monitoring',
   hideSourceMaps: true,
