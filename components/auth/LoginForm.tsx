@@ -31,7 +31,7 @@ export function LoginForm() {
   const showDebugUi = isClient && isAuthDebugVerbose()
 
   useEffect(() => {
-    console.warn('[clarispec /login] LoginForm mounted (same route as app/(auth)/login/page.tsx)')
+    console.log('[clarispec] /login loaded (client)')
   }, [])
 
   useEffect(() => {
@@ -58,8 +58,6 @@ export function LoginForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    // Always visible in Console (not gated by auth debug flags). If you never see this, onSubmit did not run.
-    console.warn('[clarispec] login: submit handler running — next step is signInWithPassword → network call to *.supabase.co')
     setError(null)
     setLoading(true)
     setDebugManualGate(false)
