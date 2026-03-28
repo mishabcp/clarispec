@@ -3,7 +3,12 @@
 // invocation so React Refresh / webpack dev never get script-src 'self' only.
 const isNextDev =
   process.argv[2] === 'dev' || process.env.npm_lifecycle_event === 'dev'
-const strictScriptSrc = process.env.NODE_ENV === 'production' && !isNextDev
+// Next.js App Router serves inline <script> for Flight / hydration. `script-src 'self'` alone
+// blocks those (Chrome Issues: script-src-elem … blocked) so client JS never runs — no React, no logs.
+// `unsafe-eval` stays dev-only; production keeps a tighter script surface than local HMR.
+const scriptSrcSupplement = isNextDev
+  ? " 'unsafe-eval' 'unsafe-inline'"
+  : " 'unsafe-inline'"
 const csp = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -12,7 +17,7 @@ const csp = [
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  `script-src 'self'${strictScriptSrc ? '' : " 'unsafe-eval' 'unsafe-inline'"}`,
+  `script-src 'self'${scriptSrcSupplement}`,
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://generativelanguage.googleapis.com",
   "object-src 'none'",
 ].join('; ')
