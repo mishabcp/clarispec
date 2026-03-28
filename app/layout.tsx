@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import './globals.css'
 import { CinematicBackground } from '@/components/ui/cinematic-background'
+import { ClientPerfRoot } from '@/components/perf/ClientPerfRoot'
 
 export const metadata: Metadata = {
   title: 'Clarispec — AI-Powered Requirements Engineering',
@@ -20,6 +22,9 @@ export default function RootLayout({
       >
         <CinematicBackground />
         <div className="relative z-10 w-full h-full">
+          <Suspense fallback={null}>
+            <ClientPerfRoot />
+          </Suspense>
           {children}
         </div>
       </body>

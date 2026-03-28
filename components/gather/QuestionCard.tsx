@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Bot, Check, ChevronDown, ChevronRight, PenLine, Send, Plus } from 'lucide-react'
+import { Bot, Check, ChevronDown, ChevronRight, PenLine, Send } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { REQUIREMENT_AREA_LABELS } from '@/types'
 import type { RequirementAreas } from '@/types'
@@ -107,29 +107,29 @@ export function QuestionCard({
   const details = suggestionDetails?.slice(0, 4)
 
   return (
-    <div className="flex gap-4 animate-fade-in group w-full">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none bg-white/[0.03] border border-white/[0.08] shadow-inner">
+    <div className="flex gap-2.5 animate-fade-in group w-full">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-none bg-white/[0.03] border border-white/[0.08] shadow-inner">
         <Bot className="h-4 w-4 text-white" />
       </div>
-      <div className="max-w-[85%] flex-1 space-y-4">
+      <div className="max-w-[85%] flex-1 space-y-2.5">
         {acknowledgment && (
           <motion.div 
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-[1px] bg-white/[0.03] border border-white/[0.08] px-6 py-4 text-xs font-light text-white/40 uppercase tracking-[0.2em] leading-relaxed italic"
+            className="rounded-[1px] bg-white/[0.03] border border-white/[0.08] px-3 py-2.5 text-[11px] font-light text-white/40 uppercase tracking-[0.2em] leading-relaxed italic"
           >
             {acknowledgment}
           </motion.div>
         )}
-        <div className="rounded-[1px] bg-[#0a0a0b]/60 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4)] px-6 py-6">
-          <Badge variant="outline" className="mb-4 h-5 px-3 text-[8px] uppercase font-bold tracking-[0.2em] bg-white/[0.03] border-white/[0.1] rounded-none">
+        <div className="rounded-[1px] bg-[#0a0a0b]/60 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4)] px-3 py-3">
+          <Badge variant="outline" className="mb-2 h-5 px-2.5 text-[8px] uppercase font-bold tracking-[0.2em] bg-white/[0.03] border-white/[0.1] rounded-none">
             {categoryLabel}
           </Badge>
-          <h2 className="text-[16px] font-extralight text-white leading-relaxed mb-6 tracking-tight">
+          <h2 className="text-[15px] font-extralight text-white leading-snug mb-3 tracking-tight">
             {question}
           </h2>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {options.map((suggestion, idx) => {
               const selected = selectedIndices.has(idx)
               const detail = details?.[idx]
@@ -148,7 +148,7 @@ export function QuestionCard({
                       }
                     }}
                     className={cn(
-                      'flex w-full items-center gap-4 rounded-[1px] border px-4 py-3 text-left transition-all duration-500 overflow-hidden relative group/item',
+                      'flex w-full items-center gap-2.5 rounded-[1px] border px-2.5 py-2 text-left transition-all duration-500 overflow-hidden relative group/item min-h-[44px]',
                       selected
                         ? 'border-white bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.1)]'
                         : 'border-white/[0.08] bg-white/[0.02] text-white/60 hover:border-white/20 hover:text-white hover:bg-white/[0.04]'
@@ -167,7 +167,7 @@ export function QuestionCard({
                     >
                       {selected ? <Check className="h-3.5 w-3.5" /> : OPTION_LABELS[idx]}
                     </span>
-                    <span className="flex-1 text-[13px] font-light tracking-wide relative z-10">{suggestion}</span>
+                    <span className="flex-1 text-[12px] font-light tracking-wide relative z-10">{suggestion}</span>
                     {detail && (
                       <button
                         type="button"
@@ -178,9 +178,12 @@ export function QuestionCard({
                         className={cn(
                           'shrink-0 h-7 px-3 text-[8px] uppercase font-bold tracking-widest transition-all duration-300 flex items-center gap-2 relative z-20 border',
                           selected
-                           ? 'text-black/40 hover:text-black border-black/10'
-                           : 'text-white/20 hover:text-white border-white/[0.08] hover:bg-white/[0.05]',
-                          isDetailExpanded && (selected ? 'bg-black/5 border-black/20' : 'bg-white/10 border-white/20 text-white')
+                            ? isDetailExpanded
+                              ? 'border-neutral-600 bg-neutral-800 text-white hover:bg-neutral-900 hover:text-white'
+                              : 'border-neutral-400 bg-neutral-200 text-neutral-900 hover:bg-neutral-300 hover:text-black'
+                            : isDetailExpanded
+                              ? 'border-white/25 bg-white/15 text-white hover:bg-white/20'
+                              : 'border-white/[0.12] bg-white/[0.06] text-white/70 hover:border-white/25 hover:bg-white/10 hover:text-white'
                         )}
                         aria-expanded={isDetailExpanded}
                       >
@@ -207,7 +210,7 @@ export function QuestionCard({
                         exit={{ opacity: 0, height: 0 }}
                         className="overflow-hidden"
                       >
-                        <div className="mt-1 ml-12 rounded-[1px] bg-white/[0.03] border border-white/[0.08] px-5 py-4 text-[12px] text-white/60 font-light leading-relaxed">
+                        <div className="mt-1 ml-11 rounded-[1px] bg-white/[0.03] border border-white/[0.08] px-3 py-2.5 text-[11px] text-white/60 font-light leading-relaxed">
                            <div className="flex gap-3">
                              <div className="w-1 h-1 rounded-full bg-white/20 mt-1.5 shrink-0" />
                              {detail}
@@ -258,7 +261,7 @@ export function QuestionCard({
                 <button
                   type="button"
                   onClick={() => setShowAdditionalInput(true)}
-                  className="mt-4 flex w-full items-center gap-4 rounded-[1px] border border-dashed border-white/[0.08] px-4 py-3 text-left text-white/20 hover:border-white/30 hover:text-white/80 transition-all duration-500 group/other"
+                  className="mt-2.5 flex w-full items-center gap-2.5 rounded-[1px] border border-dashed border-white/[0.08] px-2.5 py-2 text-left text-white/20 hover:border-white/30 hover:text-white/80 transition-all duration-500 group/other min-h-[44px]"
                 >
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-none border border-dashed border-white/[0.08] group-hover/other:border-white/20 transition-colors">
                     <PenLine className="h-3.5 w-3.5" />
@@ -275,7 +278,7 @@ export function QuestionCard({
               >
                 <Button
                   type="button"
-                  className="mt-6 h-12 w-full bg-white text-black hover:bg-white/90 rounded-none transition-all duration-700 font-bold text-[9px] uppercase tracking-[0.2em] shadow-[0_4px_32px_rgba(255,255,255,0.1)] active:scale-[0.995]"
+                  className="mt-3 h-12 w-full bg-white text-black hover:bg-white/90 rounded-none transition-all duration-700 font-bold text-[9px] uppercase tracking-[0.2em] shadow-[0_4px_32px_rgba(255,255,255,0.1)] active:scale-[0.995]"
                   onClick={handleConfirm}
                 >
                   {hasText && hasSelection

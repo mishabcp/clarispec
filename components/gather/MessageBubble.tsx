@@ -37,7 +37,7 @@ export function MessageBubble({ message, onEdit, canEdit }: MessageBubbleProps) 
   return (
     <div
       className={cn(
-        'flex gap-4 animate-fade-in group w-full',
+        'flex gap-2.5 animate-fade-in group w-full',
         isUser ? 'flex-row-reverse' : 'flex-row'
       )}
     >
@@ -57,19 +57,24 @@ export function MessageBubble({ message, onEdit, canEdit }: MessageBubbleProps) 
       </div>
       <div
         className={cn(
-          'flex max-w-[80%] flex-col gap-1.5',
+          'flex max-w-[80%] flex-col gap-1',
           isUser ? 'items-end' : 'items-start'
         )}
       >
         <div
           className={cn(
-            'rounded-[1px] px-4 py-3 text-[12px] font-light tracking-wide shadow-2xl transition-all duration-500',
+            'rounded-[1px] px-2.5 py-2 text-[11px] font-light tracking-wide shadow-2xl transition-all duration-500 leading-relaxed',
             isUser
               ? 'bg-white text-black border border-white'
               : 'bg-[#0a0a0b]/60 backdrop-blur-[64px] border border-white/[0.08] text-white/90'
           )}
         >
-          <div className={cn("prose prose-sm max-w-none", isUser ? "prose-neutral" : "prose-invert")}>
+          <div
+            className={cn(
+              'prose prose-sm max-w-none prose-p:text-[11px] prose-p:leading-relaxed prose-strong:text-inherit',
+              isUser ? 'prose-neutral' : 'prose-invert'
+            )}
+          >
             <ReactMarkdown components={components}>
               {message.content}
             </ReactMarkdown>

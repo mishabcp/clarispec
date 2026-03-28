@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
-import { motion, AnimatePresence } from 'framer-motion'
+import { SidebarSlidingPill, useSlidingNavHighlight } from '@/components/navigation/sidebar-sliding-highlight'
 import {
   LayoutDashboard,
   FolderOpen,
@@ -26,6 +26,10 @@ const navigation = [
   { name: 'Preferences', href: '/settings', icon: Settings },
 ]
 
+function navItemIsActive(pathname: string, href: string) {
+  return pathname === href || (href !== '/dashboard' && pathname.startsWith(`${href}/`))
+}
+
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
@@ -35,6 +39,8 @@ export function Sidebar() {
   const [userInitials, setUserInitials] = useState('U')
   const [userRole, setUserRole] = useState('Analyst')
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const activeIndex = navigation.findIndex((item) => navItemIsActive(pathname, item.href))
+  const { navRef, setLinkRef, metrics, hasActive } = useSlidingNavHighlight(activeIndex)
 
   useEffect(() => {
     async function loadUser() {
@@ -74,7 +80,7 @@ export function Sidebar() {
   return (
     <>
       {/* Mobile Top Bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 border-b border-white/[0.08] bg-[#0a0a0b]/80 backdrop-blur-[64px] z-50 flex items-center justify-between px-6">
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 border-b border-white/[0.08] bg-[#0a0a0b]/80 backdrop-blur-[64px] z-50 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
           <Sparkles className="h-4 w-4 text-white" />
           <span className="text-sm font-light font-heading text-white tracking-widest uppercase mt-0.5">Clarispec</span>
@@ -98,7 +104,7 @@ export function Sidebar() {
         isMobileOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         {/* Brand Header */}
-        <div className="flex h-[88px] flex-shrink-0 items-center justify-between px-8 border-b border-white/[0.08]">
+        <div className="flex h-20 flex-shrink-0 items-center justify-between px-6 border-b border-white/[0.08]">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-8 h-8 rounded-none bg-white/[0.05] border border-white/[0.1] shadow-inner">
               <Sparkles className="h-4 w-4 text-white" />
@@ -113,47 +119,45 @@ export function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto scrollbar-thin py-8 px-8 space-y-1.5">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
+        <nav
+          ref={navRef}
+          className="relative flex-1 space-y-1 overflow-y-auto px-6 py-6 scrollbar-thin"
+        >
+          <SidebarSlidingPill
+            top={metrics.top}
+            height={metrics.height}
+            visible={hasActive}
+          />
+          {navigation.map((item, index) => {
+            const isActive = navItemIsActive(pathname, item.href)
             return (
               <Link
                 key={item.name}
+                ref={setLinkRef(index)}
                 href={item.href}
                 className={cn(
-                  'group flex items-center gap-4 rounded-none px-4 py-3.5 transition-all duration-500 relative overflow-hidden',
+                  'group relative z-10 flex min-h-[44px] items-center gap-3 overflow-hidden rounded-none px-3 py-3 transition-colors duration-500',
                   isActive ? 'text-white' : 'text-white/30 hover:text-white/70'
                 )}
               >
-                <item.icon className={cn("h-[18px] w-[18px] transition-colors duration-500 relative z-10", isActive ? "text-white" : "text-white/40 group-hover:text-white/60")} />
-                <span className="text-[11px] uppercase tracking-widest font-bold mt-0.5 relative z-10 transition-colors duration-500">
+                <item.icon
+                  className={cn(
+                    'relative z-10 h-[18px] w-[18px] transition-colors duration-500',
+                    isActive ? 'text-white' : 'text-white/40 group-hover:text-white/60'
+                  )}
+                />
+                <span className="relative z-10 mt-0.5 text-[11px] font-bold uppercase tracking-widest transition-colors duration-500">
                   {item.name}
                 </span>
-
-                <AnimatePresence>
-                  {isActive && (
-                    <motion.div
-                      layoutId="sidebar-active-pill"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                      className="absolute inset-0 bg-white/[0.06] border-l-2 border-white z-0"
-                    >
-                      <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white/[0.05] to-transparent" />
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-1/2 bg-white blur-[4px] opacity-50" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </Link>
             )
           })}
         </nav>
 
         {/* User Profile Footer */}
-        <div className="p-8 border-t border-white/[0.08] bg-black/20 flex-shrink-0">
+        <div className="p-6 border-t border-white/[0.08] bg-black/20 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 min-w-0">
+            <div className="flex items-center gap-3 min-w-0">
               <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white text-black font-bold text-[11px] tracking-widest uppercase shadow-[0_0_24px_rgba(255,255,255,0.2)]">
                 {userInitials}
               </div>

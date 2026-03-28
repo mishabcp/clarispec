@@ -152,14 +152,14 @@ export default function GatherPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-8rem)] bg-[#0a0a0b]/40 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-[1px] overflow-hidden relative">
       {/* Mobile Header */}
-      <div className="lg:hidden flex items-center justify-between px-6 h-16 border-b border-white/[0.08] bg-black/40 shrink-0">
+      <div className="lg:hidden flex items-center justify-between px-4 h-16 border-b border-white/[0.08] bg-black/40 shrink-0">
         <div className="flex flex-col">
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-white/40">Project Progress</span>
-          <span className="text-xs font-bold text-white tracking-widest uppercase">{score}% COMPLETE</span>
+          <span className="text-[11px] font-bold text-white tracking-widest uppercase">{score}% COMPLETE</span>
         </div>
         <button 
           onClick={() => setShowProgressMobile(!showProgressMobile)}
-          className="h-10 px-4 border border-white/[0.08] bg-white/[0.03] text-[10px] uppercase font-bold tracking-widest text-white hover:bg-white/[0.08] transition-all"
+          className="h-10 px-3 border border-white/[0.08] bg-white/[0.03] text-[10px] uppercase font-bold tracking-widest text-white hover:bg-white/[0.08] transition-all"
         >
           {showProgressMobile ? 'Close Progress' : 'View Progress'}
         </button>
@@ -189,7 +189,7 @@ export default function GatherPage() {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="absolute inset-0 z-50 lg:hidden bg-[#0a0a0b] overflow-y-auto"
             >
-              <div className="p-4 border-b border-white/[0.08] flex justify-between items-center bg-black/40">
+              <div className="p-3 border-b border-white/[0.08] flex justify-between items-center bg-black/40">
                 <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-white/60">Coverage Overview</span>
                 <button onClick={() => setShowProgressMobile(false)} className="text-white/40 hover:text-white">
                   <Loader2 className="h-5 w-5 rotate-45" /> {/* Generic X icon replacement or use X */}

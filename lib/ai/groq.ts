@@ -1,6 +1,7 @@
 import 'server-only'
 import Groq from 'groq-sdk'
 import { RateLimitError } from 'groq-sdk'
+import { measureAsync } from '@/lib/perf-log/measure'
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -22,22 +23,24 @@ export async function generateWithGroq(
   prompt: string,
   opts: GenerateTextOptions
 ): Promise<string> {
-  const completion = await groq.chat.completions.create({
-    model: MODEL,
-    messages: [
-      { role: 'system', content: system },
-      { role: 'user', content: prompt },
-    ],
-    temperature: opts.temperature,
-    max_tokens: opts.maxTokens,
-  })
+  return measureAsync('server', 'ai-provider', 'groq.chat.completions', async () => {
+    const completion = await groq.chat.completions.create({
+      model: MODEL,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: prompt },
+      ],
+      temperature: opts.temperature,
+      max_tokens: opts.maxTokens,
+    })
 
-  const choice = completion.choices[0]
-  const content = choice?.message?.content
-  if (content == null) {
-    throw new Error('Groq returned no content')
-  }
-  return content
+    const choice = completion.choices[0]
+    const content = choice?.message?.content
+    if (content == null) {
+      throw new Error('Groq returned no content')
+    }
+    return content
+  })
 }
 
 export function isGroqRateLimitError(err: unknown): boolean {

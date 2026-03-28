@@ -3,11 +3,13 @@ import { projectIdFromParams } from '@/lib/route-params'
 import { NextResponse } from 'next/server'
 import { asMessageType, asObject, asString } from '@/lib/validation'
 import { isSameOrigin } from '@/lib/security'
+import { runTimedApiRoute } from '@/lib/perf-log/timed-api'
 
 export async function GET(
-  _request: Request,
+  request: Request,
   ctx: { params: Promise<{ projectId: string }> }
 ) {
+  return runTimedApiRoute('GET /api/projects/[projectId]/messages', 'GET', request, async () => {
   const projectId = await projectIdFromParams(ctx.params)
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -38,12 +40,14 @@ export async function GET(
   }
 
   return NextResponse.json(data)
+  })
 }
 
 export async function POST(
   request: Request,
   ctx: { params: Promise<{ projectId: string }> }
 ) {
+  return runTimedApiRoute('POST /api/projects/[projectId]/messages', 'POST', request, async () => {
   const projectId = await projectIdFromParams(ctx.params)
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
@@ -99,12 +103,14 @@ export async function POST(
   }
 
   return NextResponse.json(data)
+  })
 }
 
 export async function DELETE(
   request: Request,
   ctx: { params: Promise<{ projectId: string }> }
 ) {
+  return runTimedApiRoute('DELETE /api/projects/[projectId]/messages', 'DELETE', request, async () => {
   const projectId = await projectIdFromParams(ctx.params)
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
@@ -157,4 +163,5 @@ export async function DELETE(
   }
 
   return NextResponse.json({ success: true })
+  })
 }

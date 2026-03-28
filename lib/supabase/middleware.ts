@@ -3,12 +3,20 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { logProxyDebug } from '@/lib/proxy-debug'
 import { getSupabaseCookieOptions } from '@/lib/supabase/cookie-options'
 
-export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({
+function nextWithRequestHeaders(request: NextRequest, correlationId?: string) {
+  const headers = new Headers(request.headers)
+  if (correlationId) {
+    headers.set('x-correlation-id', correlationId)
+  }
+  return NextResponse.next({
     request: {
-      headers: request.headers,
+      headers,
     },
   })
+}
+
+export async function updateSession(request: NextRequest, correlationId?: string) {
+  let response = nextWithRequestHeaders(request, correlationId)
 
   // getAll/setAll is required for chunked sb-* cookies; deprecated get/set can miss chunks
   // and only works on localhost when the session fits fewer cookie parts.
@@ -25,11 +33,7 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options })
           })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
+          response = nextWithRequestHeaders(request, correlationId)
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set({ name, value, ...options })
           })
@@ -85,15 +89,22 @@ export async function updateSession(request: NextRequest) {
     })
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    const redirect = NextResponse.redirect(url)
+    if (correlationId) redirect.headers.set('x-correlation-id', correlationId)
+    return redirect
   }
 
   // Signed-in users at `/` go to dashboard; `/login` and `/signup` redirect client-side only.
   if (user && isRootPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
+    const redirect = NextResponse.redirect(url)
+    if (correlationId) redirect.headers.set('x-correlation-id', correlationId)
+    return redirect
   }
 
+  if (correlationId) {
+    response.headers.set('x-correlation-id', correlationId)
+  }
   return response
 }

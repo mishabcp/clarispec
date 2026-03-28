@@ -449,7 +449,7 @@ export function ChatInterface({ project, onScoreUpdate }: ChatInterfaceProps) {
   return (
     <div className="flex h-full flex-col">
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 scrollbar-thin">
+      <div className="flex-1 overflow-y-auto p-2 md:p-3 space-y-2 scrollbar-thin">
         {messages.filter(Boolean).map((msg, idx, filteredMsgs) => {
           const isLastMessage = idx === filteredMsgs.length - 1
           const isLastQuestion =
@@ -504,12 +504,12 @@ export function ChatInterface({ project, onScoreUpdate }: ChatInterfaceProps) {
 
       {/* Session complete banner */}
       {isSessionComplete && (
-        <div className="border-t border-white/[0.08] bg-success/5 px-6 py-4">
+        <div className="border-t border-white/[0.08] bg-success/5 px-3 py-2.5">
           <div className="flex items-center gap-2 text-success">
             <CheckCircle2 className="h-4 w-4" />
             <span className="text-[10px] uppercase font-bold tracking-[0.2em]">Session Complete</span>
           </div>
-          <p className="mt-1 text-[11px] text-white/40 font-light italic">
+          <p className="mt-1 text-[10px] text-white/40 font-light italic leading-relaxed">
             All requirement areas are covered. You can now generate your documents.
           </p>
         </div>
@@ -523,7 +523,7 @@ export function ChatInterface({ project, onScoreUpdate }: ChatInterfaceProps) {
           messages[messages.length - 1]?.message_type === 'question' &&
           currentQuestion?.suggestions?.length
         )) && (
-        <div className="border-t border-white/[0.08] px-4 py-3 bg-black/20">
+        <div className="border-t border-white/[0.08] px-3 py-2.5 bg-black/20">
           {editingMessage !== null && (
             <div className="mb-2 flex items-center justify-between gap-2">
               <span className="text-[10px] uppercase tracking-wider text-white/20 italic">Editing message...</span>

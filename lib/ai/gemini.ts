@@ -1,5 +1,6 @@
 import 'server-only'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { measureAsync } from '@/lib/perf-log/measure'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 
@@ -19,21 +20,23 @@ export async function generateWithGemini(
   prompt: string,
   opts: GenerateTextOptions
 ): Promise<string> {
-  const model = genAI.getGenerativeModel({
-    model: MODEL,
-    generationConfig: {
-      temperature: opts.temperature,
-      topK: 40,
-      topP: 0.95,
-      maxOutputTokens: opts.maxTokens,
-    },
-  })
+  return measureAsync('server', 'ai-provider', 'gemini.generateContent', async () => {
+    const model = genAI.getGenerativeModel({
+      model: MODEL,
+      generationConfig: {
+        temperature: opts.temperature,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: opts.maxTokens,
+      },
+    })
 
-  const result = await model.generateContent([
-    { text: system },
-    { text: prompt },
-  ])
-  return result.response.text()
+    const result = await model.generateContent([
+      { text: system },
+      { text: prompt },
+    ])
+    return result.response.text()
+  })
 }
 
 export function getGeminiModel() {

@@ -45,8 +45,14 @@ const config: Config = {
         'auth-shell': 'authShell 1.8s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards',
         'auth-title': 'authTitle 2.2s cubic-bezier(0.16, 1, 0.36, 1) 0.1s forwards',
         'auth-heading': 'authHeading 1s ease-out 0.5s forwards',
+        /** Sidebar nav sliding highlight — slow, low-contrast drift */
+        'sidebar-nav-sheen': 'sidebarNavSheen 14s ease-in-out infinite',
       },
       keyframes: {
+        sidebarNavSheen: {
+          '0%, 100%': { transform: 'translateX(-8%)' },
+          '50%': { transform: 'translateX(8%)' },
+        },
         authShell: {
           '0%': { opacity: '0', transform: 'translateY(15px) scale(0.995)' },
           '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },

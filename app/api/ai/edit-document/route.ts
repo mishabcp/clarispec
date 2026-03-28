@@ -5,8 +5,10 @@ import { getDocumentEditPrompt } from '@/lib/ai/prompts/editDocument'
 import { checkRateLimit, getClientIp, isSameOrigin } from '@/lib/security'
 import { asObject, asString } from '@/lib/validation'
 import { redactSensitivePromptInput } from '@/lib/ai/redaction'
+import { runTimedApiRoute } from '@/lib/perf-log/timed-api'
 
 export async function POST(request: Request) {
+  return runTimedApiRoute('POST /api/ai/edit-document', 'POST', request, async () => {
   try {
     if (!isSameOrigin(request)) {
       return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
@@ -76,4 +78,5 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
+  })
 }

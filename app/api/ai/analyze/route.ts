@@ -6,8 +6,10 @@ import { parseAIResponse } from '@/lib/ai/conversation'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, getClientIp, isSameOrigin } from '@/lib/security'
 import { asObject, asString } from '@/lib/validation'
+import { runTimedApiRoute } from '@/lib/perf-log/timed-api'
 
 export async function POST(request: Request) {
+  return runTimedApiRoute('POST /api/ai/analyze', 'POST', request, async () => {
   try {
     if (!isSameOrigin(request)) {
       return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
@@ -64,4 +66,5 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
+  })
 }

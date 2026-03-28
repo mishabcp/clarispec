@@ -1,5 +1,6 @@
 import { updateSession } from '@/lib/supabase/middleware'
 import { logProxyDebug } from '@/lib/proxy-debug'
+import { recordPerf } from '@/lib/perf-log/record'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const ADMIN_SESSION_COOKIE = 'clarispec_admin_session'
@@ -50,6 +51,25 @@ async function hasValidAdminToken(token: string | undefined): Promise<boolean> {
 }
 
 export async function proxy(request: NextRequest) {
+  const t0 = performance.now()
+  const path = request.nextUrl.pathname
+  const correlationId = crypto.randomUUID()
+
+  const finish = (response: NextResponse, branch: string) => {
+    recordPerf({
+      source: 'edge',
+      kind: 'proxy',
+      name: 'proxy',
+      path,
+      method: request.method,
+      duration_ms: performance.now() - t0,
+      status: response.status,
+      correlation_id: correlationId,
+      meta: { branch },
+    })
+    return response
+  }
+
   if (request.nextUrl.pathname.startsWith('/admin')) {
     logProxyDebug('branch:admin', request, {
       hasAdminSessionCookie: Boolean(request.cookies.get(ADMIN_SESSION_COOKIE)?.value),
@@ -62,14 +82,21 @@ export async function proxy(request: NextRequest) {
         logProxyDebug('action:redirect_admin_to_login', request, { adminTokenValid: false })
         const url = request.nextUrl.clone()
         url.pathname = '/admin/login'
-        return NextResponse.redirect(url)
+        const redirect = NextResponse.redirect(url)
+        redirect.headers.set('x-correlation-id', correlationId)
+        return finish(redirect, 'admin-redirect-login')
       }
     }
-    return NextResponse.next()
+    const headers = new Headers(request.headers)
+    headers.set('x-correlation-id', correlationId)
+    const next = NextResponse.next({ request: { headers } })
+    next.headers.set('x-correlation-id', correlationId)
+    return finish(next, 'admin')
   }
 
   logProxyDebug('branch:app→updateSession', request, {})
-  return await updateSession(request)
+  const res = await updateSession(request, correlationId)
+  return finish(res, 'app')
 }
 
 export const config = {

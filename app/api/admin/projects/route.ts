@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/admin'
+import { runTimedApiRoute } from '@/lib/perf-log/timed-api'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,6 +18,7 @@ function sanitizeSearch(value: string): string {
 }
 
 export async function GET(request: Request) {
+  return runTimedApiRoute('GET /api/admin/projects', 'GET', request, async () => {
   try {
     const session = await requireAdmin()
     if (!session) {
@@ -83,4 +85,5 @@ export async function GET(request: Request) {
   } catch {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
+  })
 }

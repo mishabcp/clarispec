@@ -2,13 +2,15 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/admin'
 import { projectIdFromParams } from '@/lib/route-params'
+import { runTimedApiRoute } from '@/lib/perf-log/timed-api'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(
-  _request: Request,
+  request: Request,
   ctx: { params: Promise<{ projectId: string }> }
 ) {
+  return runTimedApiRoute('GET /api/admin/projects/[projectId]', 'GET', request, async () => {
   try {
     const session = await requireAdmin()
     if (!session) {
@@ -63,4 +65,5 @@ export async function GET(
   } catch {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
+  })
 }

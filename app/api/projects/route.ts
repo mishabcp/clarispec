@@ -2,8 +2,11 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { asDepthLevel, asObject, asString } from '@/lib/validation'
 import { isSameOrigin } from '@/lib/security'
+import { perfStubRequest, runTimedApiRoute } from '@/lib/perf-log/timed-api'
 
 export async function GET() {
+  const stub = perfStubRequest('/api/projects', 'GET')
+  return runTimedApiRoute('GET /api/projects', 'GET', stub, async () => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -22,9 +25,11 @@ export async function GET() {
   }
 
   return NextResponse.json(data)
+  })
 }
 
 export async function POST(request: Request) {
+  return runTimedApiRoute('POST /api/projects', 'POST', request, async () => {
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
   }
@@ -70,4 +75,5 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json(data)
+  })
 }

@@ -11,6 +11,7 @@ import { getTimelinePrompt } from '@/lib/ai/prompts/documents/timeline'
 import type { DocumentType } from '@/types'
 import { DOCUMENT_TYPES } from '@/types'
 import { delay } from '@/lib/utils'
+import { measureAsync } from '@/lib/perf-log/measure'
 
 interface ProjectInfo {
   name: string
@@ -58,24 +59,26 @@ export async function generateDocument(
   project: ProjectInfo,
   conversationHistory: string
 ): Promise<{ title: string; content: string }> {
-  const prompt = getPrompt(docType, project, conversationHistory)
-  let content = await generateForDocs(SYSTEM_PROMPT, prompt)
+  return measureAsync('server', 'documents', `generateDocument:${docType}`, async () => {
+    const prompt = getPrompt(docType, project, conversationHistory)
+    let content = await generateForDocs(SYSTEM_PROMPT, prompt)
 
-  // Strip markdown code fences if present
-  if (content.startsWith('```markdown')) {
-    content = content.slice(11)
-  }
-  if (content.startsWith('```')) {
-    content = content.slice(3)
-  }
-  if (content.endsWith('```')) {
-    content = content.slice(0, -3)
-  }
+    // Strip markdown code fences if present
+    if (content.startsWith('```markdown')) {
+      content = content.slice(11)
+    }
+    if (content.startsWith('```')) {
+      content = content.slice(3)
+    }
+    if (content.endsWith('```')) {
+      content = content.slice(0, -3)
+    }
 
-  return {
-    title: getDocTitle(docType),
-    content: content.trim(),
-  }
+    return {
+      title: getDocTitle(docType),
+      content: content.trim(),
+    }
+  })
 }
 
 export async function generateAllDocuments(
@@ -83,13 +86,15 @@ export async function generateAllDocuments(
   project: ProjectInfo,
   conversationHistory: string
 ): Promise<{ docType: DocumentType; title: string; content: string }[]> {
-  const results: { docType: DocumentType; title: string; content: string }[] = []
+  return measureAsync('server', 'documents', 'generateAllDocuments', async () => {
+    const results: { docType: DocumentType; title: string; content: string }[] = []
 
-  for (const docType of selectedDocs) {
-    const { title, content } = await generateDocument(docType, project, conversationHistory)
-    results.push({ docType, title, content })
-    await delay(1000) // Respect rate limits
-  }
+    for (const docType of selectedDocs) {
+      const { title, content } = await generateDocument(docType, project, conversationHistory)
+      results.push({ docType, title, content })
+      await delay(1000) // Respect rate limits
+    }
 
-  return results
+    return results
+  }, { meta: { docCount: selectedDocs.length } })
 }
