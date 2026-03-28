@@ -30,6 +30,7 @@ export function LoginForm() {
 
   const showDebugUi = isClient && isAuthDebugVerbose()
 
+  // Visible on production too (not gated). If you only see red Errors here, DevTools → Console → enable Default level **Info** (console.log is Info, not Error).
   useEffect(() => {
     console.log('[clarispec] /login loaded (client)')
   }, [])

@@ -16,6 +16,19 @@
  * 4. `router.push('/dashboard')` or manual “Continue” (if `clarispec_debug_auth_manual=1`).
  * 5. Proxy `updateSession` runs on the next request: `getUser()` reads cookies; guest → redirect `/login`.
  *
+ * ## Why localhost shows `[clarispec:auth]` but production does not
+ * In the **production** client bundle, `process.env.NODE_ENV` is replaced with `"production"`, so
+ * `isAuthDebugEnabled()` becomes **only** `isAuthDebugVerbose()` (see implementation). Auth debug lines
+ * are **intentionally off** on Vercel unless you set `NEXT_PUBLIC_DEBUG_AUTH=1` or
+ * `localStorage clarispec_debug_auth=1` and reload.
+ *
+ * ## Why plain `console.log` might “disappear” on live while a red Error still shows
+ * Chrome DevTools → Console → **Default levels**: if **Info** is unchecked, `console.log` is hidden but
+ * **uncaught** promise rejections still show as errors. Supabase Realtime often emits benign
+ * `Connection closed` rejections; `lib/supabase/client.ts` suppresses the default console line for those.
+ * Enable **Info** (and clear the filter box) to see `[clarispec] /login loaded (client)` and similar.
+ * Local `next dev` also injects `forward-logs-shared.js` — production does not; messages look different.
+ *
  * ## Console “losing” logs
  * Browsers clear the console on navigation unless DevTools **Preserve log** is on. Code cannot force the
  * console to keep history; use Preserve log, this pause, or the on-page panel below.

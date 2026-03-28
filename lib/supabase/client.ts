@@ -26,9 +26,27 @@ function patchRealtimeSetAuthUnhandledRejection(client: SupabaseClient) {
     })
 }
 
+/**
+ * Realtime can reject with "Connection closed" on paths we do not patch (not only `setAuth`).
+ * That surfaces as an uncaught promise — red in DevTools and easy to mistake for "nothing else logs".
+ * `preventDefault()` stops the browser from printing that default unhandled-rejection line.
+ */
+let benignRealtimeRejectionGuardInstalled = false
+
+function installBenignRealtimeUnhandledRejectionGuard() {
+  if (typeof window === 'undefined' || benignRealtimeRejectionGuardInstalled) return
+  benignRealtimeRejectionGuardInstalled = true
+  window.addEventListener('unhandledrejection', (event) => {
+    if (isBenignRealtimeSetAuthFailure(event.reason)) {
+      event.preventDefault()
+    }
+  })
+}
+
 /** Singleton browser Supabase client. */
 export function createClient() {
   if (!browserClient) {
+    installBenignRealtimeUnhandledRejectionGuard()
     browserClient = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
