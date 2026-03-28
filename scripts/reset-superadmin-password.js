@@ -45,20 +45,22 @@ function readHidden(promptText) {
 
 async function main() {
   if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PROD_ADMIN_SCRIPTS !== 'true') {
-    console.error('Refusing to run in production. Set ALLOW_PROD_ADMIN_SCRIPTS=true if you intend to proceed.')
+    process.stderr.write(
+      'Refusing to run in production. Set ALLOW_PROD_ADMIN_SCRIPTS=true if you intend to proceed.\n'
+    )
     process.exit(1)
   }
 
   const [,, email, passwordArg] = process.argv
 
   if (!email) {
-    console.error('Usage: node scripts/reset-superadmin-password.js <email> [password]')
+    process.stderr.write('Usage: node scripts/reset-superadmin-password.js <email> [password]\n')
     process.exit(1)
   }
 
   const password = passwordArg || (await readHidden('New password: '))
   if (!password) {
-    console.error('Password is required')
+    process.stderr.write('Password is required\n')
     process.exit(1)
   }
 
@@ -68,7 +70,9 @@ async function main() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !serviceKey) {
-    console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local')
+    process.stderr.write(
+      'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local\n'
+    )
     process.exit(1)
   }
 
@@ -93,21 +97,21 @@ async function main() {
 
   if (!response.ok) {
     const err = await response.text()
-    console.error('Failed to update password:', err)
+    process.stderr.write(`Failed to update password: ${err}\n`)
     process.exit(1)
   }
 
   const rows = await response.json()
   if (!Array.isArray(rows) || rows.length === 0) {
-    console.error(`No superadmin found with email: ${emailNorm}`)
-    console.error('Create one with: node scripts/create-superadmin.js <email> <password>')
+    process.stderr.write(`No superadmin found with email: ${emailNorm}\n`)
+    process.stderr.write('Create one with: node scripts/create-superadmin.js <email> <password>\n')
     process.exit(1)
   }
 
-  console.log('Password updated successfully.')
-  console.log(`  Email: ${rows[0].email}`)
-  console.log('')
-  console.log('Log in at: /admin/login')
+  process.stdout.write('Password updated successfully.\n')
+  process.stdout.write(`  Email: ${rows[0].email}\n`)
+  process.stdout.write('\n')
+  process.stdout.write('Log in at: /admin/login\n')
 }
 
 main()

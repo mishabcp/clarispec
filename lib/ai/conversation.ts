@@ -180,7 +180,6 @@ export function parseAIResponse(text: string): Record<string, unknown> | null {
       if (!repaired) return null
       try {
         parsed = JSON.parse(repaired)
-        console.warn('[Clarispec] Repaired truncated AI response — some fields may be missing')
       } catch {
         return null
       }

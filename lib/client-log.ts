@@ -1,13 +1,6 @@
-const isProd = process.env.NODE_ENV === 'production'
+/** Dev-only helpers; intentionally no-op (no console). */
+export function clientLog(..._args: unknown[]) {}
 
-export function clientLog(...args: unknown[]) {
-  if (!isProd) console.log(...args)
-}
+export function clientWarn(..._args: unknown[]) {}
 
-export function clientWarn(...args: unknown[]) {
-  if (!isProd) console.warn(...args)
-}
-
-export function clientError(...args: unknown[]) {
-  if (!isProd) console.error(...args)
-}
+export function clientError(..._args: unknown[]) {}

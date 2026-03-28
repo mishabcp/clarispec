@@ -61,7 +61,6 @@ export async function GET(
       documents: docsPreview,
     })
   } catch {
-    console.error('Admin project detail error')
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }

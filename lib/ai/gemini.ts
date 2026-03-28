@@ -33,10 +33,6 @@ export async function generateWithGemini(
     { text: system },
     { text: prompt },
   ])
-  const finishReason = result.response.candidates?.[0]?.finishReason
-  if (finishReason === 'MAX_TOKENS') {
-    console.warn(`[Gemini] Response truncated (finishReason=MAX_TOKENS). maxOutputTokens: ${opts.maxTokens}`)
-  }
   return result.response.text()
 }
 

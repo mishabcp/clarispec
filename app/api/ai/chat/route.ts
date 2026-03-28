@@ -75,12 +75,9 @@ export async function POST(request: Request) {
       const parsed = parseAIResponse(responseText)
 
       if (!parsed) {
-        console.warn(`[Clarispec AI Chat] Attempt ${attempt}: failed to parse. Response length: ${responseText.length} chars`)
         if (attempt < MAX_ATTEMPTS) {
-          console.warn('[Clarispec AI Chat] Retrying...')
           continue
         }
-        console.error('[Clarispec AI Chat] All attempts failed to parse')
         return NextResponse.json(
           { error: 'Failed to parse AI response' },
           { status: 500 }
@@ -88,7 +85,6 @@ export async function POST(request: Request) {
       }
 
       if (!isSafeAIChatResponse(parsed)) {
-        console.warn('[Clarispec AI Chat] AI response failed safety/schema checks')
         if (attempt < MAX_ATTEMPTS) {
           continue
         }
@@ -108,13 +104,11 @@ export async function POST(request: Request) {
       (error instanceof Error && /429|quota|rate limit/i.test(message)) ||
       (error && typeof error === 'object' && 'status' in error && (error as { status: number }).status === 429)
     if (isRateLimit) {
-      console.warn('[Clarispec AI Chat] Rate-limited')
       return NextResponse.json(
         { error: 'AI is at capacity. Please try again in a minute.' },
         { status: 429 }
       )
     }
-    console.error('[Clarispec AI Chat] Error')
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }

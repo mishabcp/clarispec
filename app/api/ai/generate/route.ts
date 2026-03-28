@@ -94,13 +94,11 @@ export async function POST(request: Request) {
       (error instanceof Error && /429|quota|rate limit/i.test(message)) ||
       (error && typeof error === 'object' && 'status' in error && (error as { status: number }).status === 429)
     if (isRateLimit) {
-      console.warn('Document generation rate-limited')
       return NextResponse.json(
         { error: 'AI is at capacity. Please try again in a minute.' },
         { status: 429 }
       )
     }
-    console.error('Document generation error')
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }

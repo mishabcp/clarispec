@@ -81,7 +81,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json(enriched)
   } catch {
-    console.error('Admin projects error')
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }

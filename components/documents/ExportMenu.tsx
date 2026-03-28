@@ -19,9 +19,7 @@ export function ExportMenu({ title, content }: ExportMenuProps) {
     setExporting(true)
     try {
       await exportToPDF(title, content)
-    } catch (err) {
-      console.error('PDF export error:', err)
-    }
+    } catch {}
     setExporting(false)
     setOpen(false)
   }

@@ -23,14 +23,16 @@ const OUT_PATH = path.join(__dirname, '..', 'docs', 'full-session-dump.json')
 
 async function main() {
   if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PROD_ADMIN_SCRIPTS !== 'true') {
-    console.error('Refusing to run in production. Set ALLOW_PROD_ADMIN_SCRIPTS=true if you intend to proceed.')
+    process.stderr.write(
+      'Refusing to run in production. Set ALLOW_PROD_ADMIN_SCRIPTS=true if you intend to proceed.\n'
+    )
     process.exit(1)
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) {
-    console.error('Missing env vars')
+    process.stderr.write('Missing env vars\n')
     process.exit(1)
   }
 
@@ -68,10 +70,10 @@ async function main() {
 
   const result = { project, messages, areas, documents, selections }
   fs.writeFileSync(OUT_PATH, JSON.stringify(result, null, 2), 'utf8')
-  console.log('Wrote', OUT_PATH)
-  console.log('Messages:', (messages || []).length)
-  console.log('Documents:', (documents || []).length)
-  console.log('Score:', project?.requirement_score)
+  process.stdout.write(`Wrote ${OUT_PATH}\n`)
+  process.stdout.write(`Messages: ${(messages || []).length}\n`)
+  process.stdout.write(`Documents: ${(documents || []).length}\n`)
+  process.stdout.write(`Score: ${project?.requirement_score}\n`)
 }
 
 main()

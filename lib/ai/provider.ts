@@ -28,7 +28,6 @@ export async function generateText(
     return await generateWithGroq(safeSystem, safePrompt, opts)
   } catch (err) {
     if (isGroqRateLimitError(err)) {
-      console.warn('[AI Fallback] Groq rate-limited, falling back to Gemini')
       return await generateWithGemini(safeSystem, safePrompt, opts)
     }
     throw err

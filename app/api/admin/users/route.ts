@@ -66,7 +66,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json(filtered)
   } catch {
-    console.error('Admin users error')
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }

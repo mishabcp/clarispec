@@ -54,19 +54,21 @@ function readHidden(promptText) {
 
 async function main() {
   if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PROD_ADMIN_SCRIPTS !== 'true') {
-    console.error('Refusing to run in production. Set ALLOW_PROD_ADMIN_SCRIPTS=true if you intend to proceed.')
+    process.stderr.write(
+      'Refusing to run in production. Set ALLOW_PROD_ADMIN_SCRIPTS=true if you intend to proceed.\n'
+    )
     process.exit(1)
   }
 
   const [,, email, passwordArg, name] = process.argv
 
   if (!email) {
-    console.error('Usage: node scripts/create-superadmin.js <email> [password] [name]')
+    process.stderr.write('Usage: node scripts/create-superadmin.js <email> [password] [name]\n')
     process.exit(1)
   }
   const password = passwordArg || await readHidden('Password: ')
   if (!password) {
-    console.error('Password is required')
+    process.stderr.write('Password is required\n')
     process.exit(1)
   }
 
@@ -77,7 +79,9 @@ async function main() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !serviceKey) {
-    console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local')
+    process.stderr.write(
+      'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local\n'
+    )
     process.exit(1)
   }
 
@@ -104,17 +108,17 @@ async function main() {
 
   if (!response.ok) {
     const err = await response.text()
-    console.error('Failed to create superadmin:', err)
+    process.stderr.write(`Failed to create superadmin: ${err}\n`)
     process.exit(1)
   }
 
   const [record] = await response.json()
-  console.log('Superadmin created successfully!')
-  console.log(`  ID:    ${record.id}`)
-  console.log(`  Email: ${record.email}`)
-  console.log(`  Name:  ${record.name || '(none)'}`)
-  console.log('')
-  console.log(`Login at: /admin/login`)
+  process.stdout.write('Superadmin created successfully!\n')
+  process.stdout.write(`  ID:    ${record.id}\n`)
+  process.stdout.write(`  Email: ${record.email}\n`)
+  process.stdout.write(`  Name:  ${record.name || '(none)'}\n`)
+  process.stdout.write('\n')
+  process.stdout.write('Login at: /admin/login\n')
 }
 
 main()

@@ -74,7 +74,6 @@ export async function POST(request: Request) {
       )
     }
 
-    console.error('Document edit error')
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }

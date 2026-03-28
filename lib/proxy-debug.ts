@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 
-/** Server-side only. AUTH_DEBUG_PROXY=1 enables detailed proxy logs (no secrets / cookie values). */
+/** Server-side only. Reserved for future proxy diagnostics (currently no console output). */
 export function isProxyAuthDebug(): boolean {
   return process.env.AUTH_DEBUG_PROXY === '1'
 }
@@ -53,14 +53,7 @@ export function proxyDebugRequestMeta(request: NextRequest): Record<string, unkn
 }
 
 export function logProxyDebug(
-  phase: string,
-  request: NextRequest,
-  detail: Record<string, unknown> = {}
-): void {
-  if (!isProxyAuthDebug()) return
-  console.log('[clarispec:proxy]', new Date().toISOString(), phase, {
-    ...proxyDebugRequestMeta(request),
-    ...proxyDebugPublicEnv(),
-    ...detail,
-  })
-}
+  _phase: string,
+  _request: NextRequest,
+  _detail: Record<string, unknown> = {}
+): void {}

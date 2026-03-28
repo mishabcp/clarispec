@@ -37,9 +37,6 @@ export async function generateWithGroq(
   if (content == null) {
     throw new Error('Groq returned no content')
   }
-  if (choice.finish_reason === 'length') {
-    console.warn(`[Groq] Response truncated (finish_reason=length). Output tokens maxed at ${opts.maxTokens}. Response length: ${content.length} chars`)
-  }
   return content
 }
 
