@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { useIsClient } from '@/lib/use-is-client'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -30,9 +30,10 @@ export function LoginForm() {
 
   const showDebugUi = isClient && isAuthDebugVerbose()
 
-  // Visible on production too (not gated). If you only see red Errors here, DevTools → Console → enable Default level **Info** (console.log is Info, not Error).
-  useEffect(() => {
-    console.log('[clarispec] /login loaded (client)')
+  // useLayoutEffect: same tick as paint; still only in the browser. Pair with LoginClientProbe on the page.
+  useLayoutEffect(() => {
+    console.warn('[clarispec] /login LoginForm: layout effect (warn)')
+    console.log('[clarispec] /login LoginForm: layout effect (log)')
   }, [])
 
   useEffect(() => {
