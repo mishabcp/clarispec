@@ -1,18 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { useIsClient } from '@/lib/use-is-client'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import {
-  authDebugLog,
-  authDebugPauseBeforeRedirect,
-  isAuthDebugManualRedirect,
-  isAuthDebugVerbose,
-  documentCookieStats,
-  listSupabaseCookieNames,
-} from '@/lib/auth-debug'
-import { AuthDebugUi } from '@/components/auth/AuthDebugUi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -25,52 +15,22 @@ export function SignupForm() {
   const [companyName, setCompanyName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [debugEtaMs, setDebugEtaMs] = useState<number | null>(null)
-  const [debugManualGate, setDebugManualGate] = useState(false)
   const supabase = createClient()
-  const isClient = useIsClient()
-
-  const showDebugUi = isClient && isAuthDebugVerbose()
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
-      authDebugLog('signup mount getSession', {
-        hasSession: Boolean(data.session),
-        userId: data.session?.user?.id,
-        sbCookieNames: listSupabaseCookieNames(),
-      })
-      if (data.session?.user && !isAuthDebugVerbose()) {
+      if (data.session?.user) {
         window.location.replace('/dashboard')
       }
     })
   }, [supabase])
 
-  const completeDebugNavigation = useCallback(() => {
-    setDebugManualGate(false)
-    authDebugLog('signup manual: window.location.assign /dashboard')
-    window.location.assign('/dashboard')
-  }, [])
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    setDebugManualGate(false)
 
-    authDebugLog('signUp: start', {
-      email: email.trim(),
-      pageOrigin: window.location.origin,
-      supabaseApiHost: (() => {
-        try {
-          return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').host || '(unset)'
-        } catch {
-          return '(invalid NEXT_PUBLIC_SUPABASE_URL)'
-        }
-      })(),
-      documentCookieStatsBefore: documentCookieStats(),
-    })
-
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -81,62 +41,23 @@ export function SignupForm() {
       },
     })
 
-    authDebugLog('signUp: result', {
-      error: error?.message ?? null,
-      errorCode: error && 'code' in error ? String(error.code) : null,
-      errorStatus: error && 'status' in error ? (error as { status?: number }).status : null,
-      hasSession: Boolean(data.session),
-      userId: data.user?.id,
-      sbCookieNamesAfter: listSupabaseCookieNames(),
-      documentCookieStatsAfter: documentCookieStats(),
-    })
-
-    if (error) {
-      authDebugLog('signUp: failed', {
-        hint: 'Email already registered, weak password, or auth provider restrictions — see error message on form.',
-      })
-      setError(error.message)
+    if (signUpError) {
+      setError(signUpError.message)
       setLoading(false)
       return
     }
 
     if (data.user) {
-      await supabase.from('profiles').upsert({
-        id: data.user.id,
-        full_name: fullName,
-        company_name: companyName,
-      }, { onConflict: 'id' })
-    }
-
-    const { data: afterSession } = await supabase.auth.getSession()
-    authDebugLog('getSession: after sign-up', {
-      hasSession: Boolean(afterSession.session),
-      sbCookieNames: listSupabaseCookieNames(),
-      documentCookieStats: documentCookieStats(),
-    })
-
-    const sbNames = listSupabaseCookieNames()
-    if (sbNames.length === 0) {
-      authDebugLog(
-        'WARN: no sb-* cookies after sign-up. If email confirmation is required you may have no session yet; otherwise check Supabase Auth URL config matches this origin.'
+      await supabase.from('profiles').upsert(
+        {
+          id: data.user.id,
+          full_name: fullName,
+          company_name: companyName,
+        },
+        { onConflict: 'id' }
       )
     }
 
-    authDebugLog('signup order: pause → full navigation /dashboard (or manual gate)')
-    await authDebugPauseBeforeRedirect((ms) => setDebugEtaMs(ms))
-    setDebugEtaMs(null)
-
-    if (isAuthDebugManualRedirect()) {
-      authDebugLog('signup manual redirect gate active — UI Continue required')
-      setDebugManualGate(true)
-      setLoading(false)
-      return
-    }
-
-    authDebugLog('signup navigating: window.location.assign(/dashboard)', {
-      sbCookieNames: listSupabaseCookieNames(),
-      documentCookieStats: documentCookieStats(),
-    })
     window.location.assign('/dashboard')
   }
 
@@ -235,8 +156,8 @@ export function SignupForm() {
         </div>
 
         <div className="pt-2">
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className="group relative w-full h-11 bg-white text-black hover:bg-white/95 transition-all duration-300 font-bold text-[10px] uppercase tracking-widest rounded-none shadow-[0_4px_24px_rgba(255,255,255,0.08)] active:scale-[0.985] overflow-hidden"
             disabled={loading}
           >
@@ -247,15 +168,6 @@ export function SignupForm() {
             </span>
           </Button>
         </div>
-
-        <AuthDebugUi
-          visible={showDebugUi}
-          countdownMs={debugEtaMs}
-          manualGate={debugManualGate}
-          onManualContinue={() => {
-            completeDebugNavigation()
-          }}
-        />
 
         <div className="pt-2 text-center">
           <p className="text-[10px] tracking-normal text-white/40 uppercase">
@@ -269,7 +181,3 @@ export function SignupForm() {
     </div>
   )
 }
-
-
-
-

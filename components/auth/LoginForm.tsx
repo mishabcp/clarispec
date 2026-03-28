@@ -1,18 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
-import { useIsClient } from '@/lib/use-is-client'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import {
-  authDebugLog,
-  authDebugPauseBeforeRedirect,
-  isAuthDebugManualRedirect,
-  isAuthDebugVerbose,
-  documentCookieStats,
-  listSupabaseCookieNames,
-} from '@/lib/auth-debug'
-import { AuthDebugUi } from '@/components/auth/AuthDebugUi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -23,127 +13,40 @@ export function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [debugEtaMs, setDebugEtaMs] = useState<number | null>(null)
-  const [debugManualGate, setDebugManualGate] = useState(false)
   const supabase = createClient()
-  const isClient = useIsClient()
-
-  const showDebugUi = isClient && isAuthDebugVerbose()
-
-  // useLayoutEffect: same tick as paint; still only in the browser. Pair with LoginClientProbe on the page.
-  useLayoutEffect(() => {
-    console.warn('[clarispec] /login LoginForm: layout effect (warn)')
-    console.log('[clarispec] /login LoginForm: layout effect (log)')
-  }, [])
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
-      authDebugLog('mount getSession', {
-        hasSession: Boolean(data.session),
-        userId: data.session?.user?.id,
-        sbCookieNames: listSupabaseCookieNames(),
-      })
-      // Verbose: never auto-redirect from this effect — `router.refresh()` after sign-in remounts
-      // and would call `replace` immediately, bypassing `authDebugPauseBeforeRedirect` in submit.
-      if (data.session?.user && !isAuthDebugVerbose()) {
-        // Full navigation so middleware receives sb-* cookies (router.replace can skip them on some hosts).
+      if (data.session?.user) {
         window.location.replace('/dashboard')
       }
     })
   }, [supabase])
 
-  const completeDebugNavigation = useCallback(() => {
-    setDebugManualGate(false)
-    authDebugLog('manual: window.location.assign /dashboard')
-    window.location.assign('/dashboard')
-  }, [])
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    setDebugManualGate(false)
 
-    authDebugLog('signInWithPassword: start', {
-      email: email.trim(),
-      pageOrigin: window.location.origin,
-      pagePath: window.location.pathname,
-      supabaseApiHost: (() => {
-        try {
-          return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').host || '(unset)'
-        } catch {
-          return '(invalid NEXT_PUBLIC_SUPABASE_URL)'
-        }
-      })(),
-      documentCookieStatsBefore: documentCookieStats(),
-    })
-
-    let signData: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>['data']
     let signError: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>['error']
     try {
-      const out = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
-      signData = out.data
-      signError = out.error
+      signError = error
     } catch (err) {
-      console.error('[clarispec] login: signInWithPassword threw before/after fetch', err)
       setError(err instanceof Error ? err.message : 'Sign-in failed unexpectedly.')
       setLoading(false)
       return
     }
 
-    authDebugLog('signInWithPassword: result', {
-      error: signError?.message ?? null,
-      errorCode: signError && 'code' in signError ? String(signError.code) : null,
-      errorStatus: signError && 'status' in signError ? (signError as { status?: number }).status : null,
-      hasSession: Boolean(signData.session),
-      userId: signData.user?.id,
-      expiresAt: signData.session?.expires_at ?? null,
-      sbCookieNamesAfter: listSupabaseCookieNames(),
-      documentCookieStatsAfter: documentCookieStats(),
-    })
-
     if (signError) {
-      authDebugLog('signInWithPassword: failed — stays on /login', {
-        hint: 'If invalid credentials, Supabase returns an error above. If email not confirmed, sign-in may be blocked until confirmation.',
-      })
       setError(signError.message)
       setLoading(false)
       return
     }
 
-    const { data: afterSession } = await supabase.auth.getSession()
-    authDebugLog('getSession: after successful sign-in', {
-      hasSession: Boolean(afterSession.session),
-      sbCookieNames: listSupabaseCookieNames(),
-      documentCookieStats: documentCookieStats(),
-    })
-
-    const sbNames = listSupabaseCookieNames()
-    if (sbNames.length === 0) {
-      authDebugLog(
-        'WARN: no sb-* cookies in document after sign-in. Server will see Auth session missing. Check Supabase Auth URL config (Site URL + Redirect URLs) matches this origin; ensure cookies are not blocked.'
-      )
-    }
-
-    // 1) Pause first (verbose only); 2) full page load so Cookie header includes Supabase cookies for proxy.getUser().
-    authDebugLog('order: pause → full navigation /dashboard (or manual gate)')
-    await authDebugPauseBeforeRedirect((ms) => setDebugEtaMs(ms))
-    setDebugEtaMs(null)
-
-    if (isAuthDebugManualRedirect()) {
-      authDebugLog('manual redirect gate active — UI Continue required')
-      setDebugManualGate(true)
-      setLoading(false)
-      return
-    }
-
-    authDebugLog('navigating: window.location.assign(/dashboard)', {
-      sbCookieNames: listSupabaseCookieNames(),
-      documentCookieStats: documentCookieStats(),
-    })
     window.location.assign('/dashboard')
   }
 
@@ -155,7 +58,7 @@ export function LoginForm() {
         </h2>
       </div>
 
-      {/* noValidate: otherwise the browser can block submit (invalid email format, etc.) without firing onSubmit — no Supabase request in Network/HAR */}
+      {/* noValidate: otherwise the browser can block submit (invalid email format, etc.) without firing onSubmit */}
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         {error && (
           <div
@@ -222,15 +125,6 @@ export function LoginForm() {
             </span>
           </Button>
         </div>
-
-        <AuthDebugUi
-          visible={showDebugUi}
-          countdownMs={debugEtaMs}
-          manualGate={debugManualGate}
-          onManualContinue={() => {
-            completeDebugNavigation()
-          }}
-        />
 
         <div className="pt-2 text-center">
           <p className="text-[10px] tracking-normal text-white/40 uppercase">
