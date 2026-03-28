@@ -1,0 +1,29 @@
+---
+description: End every assistant reply with a short factual summary of what was covered
+alwaysApply: true
+---
+
+# Response summary
+
+At the **end** of every assistant response, add a compact summary section.
+
+## Format
+
+- Use a level-2 heading: `## Summary`
+- Follow with **2–4 short bullet points** (or, if the reply was very short, **one sentence**).
+- Recap only what this reply actually did or explained: decisions, files touched, key outcomes, or direct answers. No new instructions or tasks unless they were part of the same reply.
+- Write for **beginners**: short, plain language; avoid jargon unless the main answer already defined it; if a technical term is needed, say what it means in a few words. Someone skimming the summary alone should grasp the gist without rereading the full reply.
+
+## Constraints
+
+- Do **not** use the summary for engagement prompts ("let me know if…", "happy to help with…") unless the user asked for next steps in that message.
+- Skip the summary only when the entire reply is already a single sentence or a trivial acknowledgment.
+
+## Example
+
+```markdown
+## Summary
+
+- We added a Cursor rule file so every reply ends with a short recap.
+- Summaries stay factual (no salesy closers) and use simple words so new readers can follow.
+```

@@ -10,16 +10,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        navy: '#0A0F1E',
+        navy: 'transparent',
         surface: {
-          DEFAULT: '#111827',
-          hover: '#1F2937',
+          DEFAULT: '#0a0a0b',
+          hover: 'rgba(255, 255, 255, 0.05)',
         },
-        border: '#1F2937',
+        border: 'rgba(255, 255, 255, 0.08)',
         primary: {
-          DEFAULT: '#3B82F6',
-          hover: '#2563EB',
-          foreground: '#FFFFFF',
+          DEFAULT: '#ffffff',
+          hover: '#f1f1f1',
+          foreground: '#000000',
         },
         accent: {
           DEFAULT: '#06B6D4',

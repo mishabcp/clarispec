@@ -1,0 +1,51 @@
+---
+alwaysApply: false
+---
+# Tagged Prompt Regenerator
+
+Only run this rule when the user manually tags this rule file in the prompt, for example:
+`@.cursor/rules/prompt-regenerator-tagged.mdc`
+If this file is not explicitly tagged, ignore this rule completely.
+
+## What to do when triggered
+
+When the user tags this rule file, transform their rough request into:
+
+1. A refined, detailed prompt that can be given to Cursor directly—**complete but not oversized** (see length guidance below).
+2. A short "why this is better" checklist.
+
+### Hard constraints (non-negotiable)
+
+- **Do not edit code.** Do not create, modify, or delete project files. Do not run implementations, refactors, or fixes. Your only job is to produce the regenerated prompt (and the checklist below).
+- **Output only** the sections under [Output format](#output-format). No extra tasks, no "I'll also…", no code blocks that implement the request.
+- **Accuracy over speed.** Prefer a correct, complete, well-scoped refined prompt over a fast shallow one. Re-read the user's wording, infer intent carefully, and tighten ambiguity before you answer.
+- **Reasonable length.** The refined prompt must not be a huge wall of text. Stay within what a downstream agent can scan quickly: use tight bullets, merge redundant points, and omit essay-style narrative. Prefer one clear paragraph per major section over many pages. If the source request is huge, summarize scope and call out only the non-obvious details the implementer needs.
+
+## Output format
+
+Return exactly these sections (and nothing else that performs work on the codebase):
+
+### Refined Prompt
+Write a complete prompt that includes:
+- Goal and success criteria
+- Context and module/scope boundaries
+- Discovery/research steps before coding
+- Implementation expectations
+- Validation/testing steps
+- Constraints (style, safety, no regressions)
+- Deliverables the downstream agent should produce (e.g. expected artifacts, summary of changes, follow-up checks)—describe what *they* should deliver, not what you are doing now
+
+### Why This Prompt Works
+- 4-8 bullets covering missing details that were added
+
+## Quality bar for rewritten prompt
+
+- Make it specific, actionable, and ordered.
+- Preserve the user's intent; do not change feature scope.
+- Include assumptions only when necessary and label them clearly.
+- Prefer concise but complete instructions over long narrative text; **do not** pad length—large prompts are harder to follow and waste context.
+- Optimize for **factual precision** and **downstream success** (the next agent can execute without guessing). If something in the user's request is unclear, call it out inside the refined prompt as an explicit assumption or a clarification question for them to answer before coding.
+
+## Example trigger
+
+`@.cursor/rules/prompt-regenerator-tagged.mdc i need dashboard for dataentry module`

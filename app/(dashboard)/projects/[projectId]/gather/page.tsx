@@ -7,9 +7,11 @@ import { ChatInterface } from '@/components/gather/ChatInterface'
 import { RequirementProgress } from '@/components/gather/RequirementProgress'
 import { getDefaultRequirementAreas } from '@/lib/ai/conversation'
 import { clientError, clientLog, clientWarn } from '@/lib/client-log'
+import { useToast } from '@/components/ui/toast'
 import type { Project, RequirementAreas, DepthLevel } from '@/types'
 import { DEPTH_THRESHOLDS } from '@/types'
 import { Loader2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function GatherPage() {
   const params = useParams()
@@ -21,6 +23,7 @@ export default function GatherPage() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const supabase = useMemo(() => createClient(), [])
+  const { addToast } = useToast()
 
   useEffect(() => {
     async function loadProject() {
@@ -110,11 +113,13 @@ export default function GatherPage() {
         const errBody = await res.text()
         clientError('[Generate] API error:', res.status, errBody)
         const isRateLimit = res.status === 429
-        alert(
-          isRateLimit
+        addToast({
+          title: 'Generation Failed',
+          description: isRateLimit
             ? 'AI is at capacity. Please try again in a minute.'
-            : 'Failed to generate documents. Please try again.'
-        )
+            : 'Failed to generate documents. Please try again.',
+          variant: 'danger'
+        })
         setGenerating(false)
         return
       }
@@ -124,44 +129,92 @@ export default function GatherPage() {
         .update({ status: 'completed' })
         .eq('id', projectId)
 
+      addToast({ title: 'Documents Generated', description: 'All documents have been created successfully.', variant: 'success' })
       router.push(`/projects/${projectId}/documents`)
     } catch (err) {
       clientError('[Generate] Error:', err)
-      alert('Failed to generate documents. Please try again.')
+      addToast({ title: 'Generation Failed', description: 'Failed to generate documents due to a server error.', variant: 'danger' })
     }
 
     setGenerating(false)
   }
 
+  const [showProgressMobile, setShowProgressMobile] = useState(false)
+
   if (loading || !project) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-white/40" />
       </div>
     )
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] -m-6 lg:-m-8">
-      {/* Left panel */}
-      <div className="w-72 border-r border-border bg-surface shrink-0">
-        <RequirementProgress
-          projectName={project.name}
-          clientName={project.client_name}
-          score={score}
-          areas={areas}
-          depthLevel={project.depth_level as DepthLevel}
-          onGenerate={handleGenerate}
-          generating={generating}
-        />
+    <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-8rem)] bg-[#0a0a0b]/40 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-[1px] overflow-hidden relative">
+      {/* Mobile Header */}
+      <div className="lg:hidden flex items-center justify-between px-6 h-16 border-b border-white/[0.08] bg-black/40 shrink-0">
+        <div className="flex flex-col">
+          <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-white/40">Project Progress</span>
+          <span className="text-xs font-bold text-white tracking-widest uppercase">{score}% COMPLETE</span>
+        </div>
+        <button 
+          onClick={() => setShowProgressMobile(!showProgressMobile)}
+          className="h-10 px-4 border border-white/[0.08] bg-white/[0.03] text-[10px] uppercase font-bold tracking-widest text-white hover:bg-white/[0.08] transition-all"
+        >
+          {showProgressMobile ? 'Close Progress' : 'View Progress'}
+        </button>
       </div>
 
-      {/* Right panel - Chat */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <ChatInterface
-          project={project}
-          onScoreUpdate={handleScoreUpdate}
-        />
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Left panel (Desktop) */}
+        <div className="w-72 border-r border-white/[0.08] shrink-0 overflow-y-auto hidden lg:block bg-gradient-to-b from-white/[0.02] to-transparent">
+          <RequirementProgress
+            projectName={project.name}
+            clientName={project.client_name}
+            score={score}
+            areas={areas}
+            depthLevel={project.depth_level as DepthLevel}
+            onGenerate={handleGenerate}
+            generating={generating}
+          />
+        </div>
+
+        {/* Mobile Progress Overlay */}
+        <AnimatePresence>
+          {showProgressMobile && (
+            <motion.div 
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="absolute inset-0 z-50 lg:hidden bg-[#0a0a0b] overflow-y-auto"
+            >
+              <div className="p-4 border-b border-white/[0.08] flex justify-between items-center bg-black/40">
+                <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-white/60">Coverage Overview</span>
+                <button onClick={() => setShowProgressMobile(false)} className="text-white/40 hover:text-white">
+                  <Loader2 className="h-5 w-5 rotate-45" /> {/* Generic X icon replacement or use X */}
+                </button>
+              </div>
+              <RequirementProgress
+                projectName={project.name}
+                clientName={project.client_name}
+                score={score}
+                areas={areas}
+                depthLevel={project.depth_level as DepthLevel}
+                onGenerate={handleGenerate}
+                generating={generating}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Right panel - Chat */}
+        <div className="flex-1 flex flex-col min-w-0 relative bg-black/20">
+          <ChatInterface
+            project={project}
+            onScoreUpdate={handleScoreUpdate}
+          />
+        </div>
       </div>
     </div>
   )

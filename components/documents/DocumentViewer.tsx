@@ -10,7 +10,9 @@ import { ExportMenu } from './ExportMenu'
 import { AIEditBar } from './AIEditBar'
 import { InlineDiff } from './InlineDiff'
 import type { Document } from '@/types'
-import { Pencil, Save, X, Sparkles } from 'lucide-react'
+import { Pencil, Save, X, Sparkles, Loader2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { cn } from '@/lib/utils'
 
 interface DocumentViewerProps {
   document: Document
@@ -135,95 +137,139 @@ export function DocumentViewer({ document, onUpdate }: DocumentViewerProps) {
 
   return (
     <div className="flex flex-col">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="mb-10 flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.08] pb-8">
+        <div className="flex items-center gap-3">
           {!editing && !aiResult && (
             <>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => setEditing(true)}>
-                <Pencil className="h-3.5 w-3.5" />
-                Edit
+              <Button 
+                variant="outline" 
+                className="h-10 rounded-none border-white/[0.08] bg-white/[0.03] text-white/60 hover:text-white hover:bg-white/[0.08] transition-all duration-300 font-bold text-[10px] uppercase tracking-[0.2em] px-6" 
+                onClick={() => setEditing(true)}
+              >
+                <Pencil className="h-3 w-3 mr-2" />
+                Edit Manually
               </Button>
               <Button
                 variant="outline"
-                size="sm"
-                className="gap-2 text-primary border-primary/30 hover:bg-primary/10"
+                className="h-10 rounded-none border-white/[0.15] bg-white text-black hover:bg-white/90 transition-all duration-300 font-bold text-[10px] uppercase tracking-[0.2em] px-6 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                 onClick={() => setAiEditing(true)}
                 disabled={aiEditing}
               >
-                <Sparkles className="h-3.5 w-3.5" />
-                Edit with AI
+                <Sparkles className="h-3 w-3 mr-2" />
+                AI Reformulate
               </Button>
             </>
           )}
           {showManualEdit && (
             <>
-              <Button size="sm" className="gap-2" onClick={handleManualSave} disabled={saving}>
-                <Save className="h-3.5 w-3.5" />
-                {saving ? 'Saving...' : 'Save'}
+              <Button 
+                className="h-10 rounded-none bg-white text-black hover:bg-white/90 transition-all duration-300 font-bold text-[10px] uppercase tracking-[0.2em] px-6" 
+                onClick={handleManualSave} 
+                disabled={saving}
+              >
+                {saving ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Save className="h-3 w-3 mr-2" />}
+                {saving ? 'Saving' : 'Commit Changes'}
               </Button>
-              <Button variant="ghost" size="sm" className="gap-2" onClick={handleManualCancel}>
-                <X className="h-3.5 w-3.5" />
-                Cancel
+              <Button 
+                variant="ghost" 
+                className="h-10 rounded-none text-white/40 hover:text-white hover:bg-white/[0.05] transition-all duration-300 font-bold text-[10px] uppercase tracking-[0.2em] px-6" 
+                onClick={handleManualCancel}
+              >
+                <X className="h-3 w-3 mr-2" />
+                Abort
               </Button>
             </>
           )}
         </div>
         {!showDiffMode && (
-          <ExportMenu title={document.title} content={content} />
+          <div className="flex items-center gap-4">
+            <ExportMenu title={document.title} content={content} />
+          </div>
         )}
       </div>
 
-      {aiError && (
-        <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
-          {aiError}
-          <button onClick={() => setAiError(null)} className="ml-2 underline hover:no-underline">
-            Dismiss
-          </button>
+      <AnimatePresence>
+        {aiError && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-8 rounded-none border border-red-500/20 bg-red-500/[0.05] p-4 text-xs font-light text-red-200 uppercase tracking-widest flex items-center justify-between"
+          >
+            <span>Error: {aiError}</span>
+            <button onClick={() => setAiError(null)} className="text-white/40 hover:text-white transition-colors">
+              <X className="h-4 w-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {showDiffMode && (
+        <div className="mb-12">
+          <InlineDiff
+            oldContent={content}
+            newContent={aiResult!}
+            onResolve={handleDiffResolve}
+            onAcceptAll={handleDiffAcceptAll}
+            onRejectAll={handleDiffRejectAll}
+          />
         </div>
       )}
 
-      {showDiffMode && (
-        <InlineDiff
-          oldContent={content}
-          newContent={aiResult!}
-          onResolve={handleDiffResolve}
-          onAcceptAll={handleDiffAcceptAll}
-          onRejectAll={handleDiffRejectAll}
-        />
-      )}
-
       {showManualEdit && (
-        <Textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="min-h-[60vh] font-mono text-sm"
-        />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="relative"
+        >
+          <div className="absolute top-4 right-4 text-[9px] uppercase tracking-widest font-black text-white/20 select-none">Manual Edit Mode</div>
+          <Textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="min-h-[70vh] w-full bg-white/[0.02] border-white/[0.08] rounded-none p-10 font-mono text-sm text-white/80 leading-relaxed focus:border-white/20 transition-colors resize-none"
+          />
+        </motion.div>
       )}
 
       {showViewMode && (
-        <article
+        <motion.article
           ref={articleRef}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           onMouseUp={handleTextSelection}
-          className="prose prose-invert max-w-none prose-headings:font-heading prose-headings:text-text-primary prose-p:text-text-secondary prose-strong:text-text-primary prose-li:text-text-secondary prose-td:text-text-secondary prose-th:text-text-primary prose-th:font-semibold prose-table:border-border prose-hr:border-border"
+          className={cn(
+            "prose prose-invert max-w-none prose-headings:font-heading prose-headings:uppercase prose-headings:tracking-tight prose-headings:font-light prose-headings:text-white/90 prose-p:text-white/60 prose-p:font-light prose-p:leading-relaxed prose-p:text-base prose-strong:text-white prose-strong:font-bold prose-li:text-white/60 prose-li:font-light prose-td:text-white/60 prose-th:text-white/90 prose-th:font-bold prose-th:uppercase prose-th:tracking-widest prose-th:text-[10px] prose-table:border-white/[0.08] prose-hr:border-white/[0.08]",
+            "selection:bg-white selection:text-black"
+          )}
         >
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {content}
           </ReactMarkdown>
-        </article>
+        </motion.article>
       )}
 
-      {/* Spacer so content isn't hidden behind the fixed AI bar */}
-      {aiBarVisible && <div className="h-36" />}
-
-      {aiBarVisible && (
-        <AIEditBar
-          selectedText={selectedText}
-          processing={aiProcessing}
-          onApply={handleAiApply}
-          onClearSelection={() => setSelectedText('')}
-          onClose={handleAiClose}
-        />
-      )}
+      {/* Fixed UI components */}
+      <AnimatePresence>
+        {aiBarVisible && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: 30, x: '-50%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed bottom-10 left-1/2 z-[100] w-full max-w-3xl px-8"
+          >
+            <AIEditBar
+              selectedText={selectedText}
+              processing={aiProcessing}
+              onApply={handleAiApply}
+              onClearSelection={() => setSelectedText('')}
+              onClose={handleAiClose}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {aiBarVisible && <div className="h-48" />}
     </div>
   )
 }

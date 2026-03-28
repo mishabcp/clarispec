@@ -23,6 +23,7 @@ const csp = [
 ].join('; ')
 
 const nextConfig = {
+  devIndicators: false,
   images: {
     remotePatterns: [],
   },

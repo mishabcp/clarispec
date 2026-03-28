@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import type { Message } from '@/types'
 import { Bot, Copy, Pencil, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import ReactMarkdown from 'react-markdown'
 
 interface MessageBubbleProps {
   message: Message
@@ -15,6 +16,11 @@ interface MessageBubbleProps {
 export function MessageBubble({ message, onEdit, canEdit }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false)
   const isUser = message.role === 'user'
+
+  const components = {
+    p: ({ children }: any) => <p className="mb-0 leading-relaxed last:mb-0">{children}</p>,
+    strong: ({ children }: any) => <strong className="font-bold text-white transition-all duration-300">{children}</strong>,
+  }
 
   async function handleCopy(e: React.MouseEvent) {
     e.stopPropagation()
@@ -31,37 +37,43 @@ export function MessageBubble({ message, onEdit, canEdit }: MessageBubbleProps) 
   return (
     <div
       className={cn(
-        'flex gap-3 animate-fade-in group',
+        'flex gap-4 animate-fade-in group w-full',
         isUser ? 'flex-row-reverse' : 'flex-row'
       )}
     >
       <div
         className={cn(
-          'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
-          isUser ? 'bg-primary/20' : 'bg-accent/20'
+          'flex h-9 w-9 shrink-0 items-center justify-center rounded-none border transition-all duration-500',
+          isUser 
+            ? 'bg-white text-black border-white shadow-[0_0_12px_rgba(255,255,255,0.2)]' 
+            : 'bg-white/[0.03] border-white/[0.08] text-white shadow-inner'
         )}
       >
         {isUser ? (
-          <User className="h-4 w-4 text-primary" />
+          <User className="h-4 w-4" />
         ) : (
-          <Bot className="h-4 w-4 text-accent" />
+          <Bot className="h-4 w-4" />
         )}
       </div>
       <div
         className={cn(
-          'flex max-w-[75%] flex-col gap-1',
+          'flex max-w-[80%] flex-col gap-1.5',
           isUser ? 'items-end' : 'items-start'
         )}
       >
         <div
           className={cn(
-            'rounded-2xl px-4 py-3 text-sm',
+            'rounded-[1px] px-4 py-3 text-[12px] font-light tracking-wide shadow-2xl transition-all duration-500',
             isUser
-              ? 'bg-primary text-white rounded-tr-sm'
-              : 'bg-surface border border-border text-text-primary rounded-tl-sm'
+              ? 'bg-white text-black border border-white'
+              : 'bg-[#0a0a0b]/60 backdrop-blur-[64px] border border-white/[0.08] text-white/90'
           )}
         >
-          <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+          <div className={cn("prose prose-sm max-w-none", isUser ? "prose-neutral" : "prose-invert")}>
+            <ReactMarkdown components={components}>
+              {message.content}
+            </ReactMarkdown>
+          </div>
         </div>
         {isUser && (
           <div

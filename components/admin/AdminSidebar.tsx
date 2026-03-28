@@ -28,7 +28,7 @@ export function AdminSidebar() {
   }
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-border bg-surface">
+    <aside className="flex h-screen w-64 flex-col border-r border-border bg-surface/90 backdrop-blur-[64px] relative z-20 shadow-[4px_0_24px_-4px_rgba(0,0,0,0.5)]">
       <div className="flex h-16 items-center gap-2 border-b border-border px-6">
         <Sparkles className="h-6 w-6 text-primary" />
         <span className="text-xl font-bold font-heading bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">

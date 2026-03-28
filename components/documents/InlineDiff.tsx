@@ -5,6 +5,7 @@ import { diffLines, type Change } from 'diff'
 import { Button } from '@/components/ui/button'
 import { Check, Undo2, CheckCheck, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { motion, AnimatePresence } from 'framer-motion'
 
 type HunkStatus = 'pending' | 'accepted' | 'rejected'
 
@@ -126,42 +127,43 @@ export function InlineDiff({ oldContent, newContent, onResolve, onAcceptAll, onR
   }
 
   return (
-    <div className="space-y-0">
-      <div className="sticky top-0 z-10 flex items-center justify-between rounded-lg border border-border bg-surface/95 backdrop-blur-sm px-4 py-2.5 mb-4">
-        <span className="text-sm text-text-secondary">
-          <span className="font-semibold text-text-primary">{pendingCount}</span>
-          {' '}of{' '}
-          <span className="font-semibold text-text-primary">{totalHunks}</span>
-          {' '}change{totalHunks !== 1 ? 's' : ''} remaining
-        </span>
-        <div className="flex items-center gap-2">
+    <div className="space-y-6">
+      <div className="sticky top-0 z-20 flex items-center justify-between border border-white/[0.08] bg-[#0a0a0b]/80 backdrop-blur-[32px] px-6 py-4 rounded-none shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+        <div className="flex flex-col">
+          <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-white/30 truncate">AI Reformulation Preview</span>
+          <span className="text-xs text-white/60 font-light mt-0.5">
+            <span className="text-white font-bold">{pendingCount}</span>
+            {' '}of{' '}
+            <span className="text-white font-bold">{totalHunks}</span>
+            {' '}change{totalHunks !== 1 ? 's' : ''} pending
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            size="sm"
-            className="gap-1.5 text-red-400 border-red-500/30 hover:bg-red-500/10 hover:text-red-300"
+            className="h-10 rounded-none border-white/[0.08] bg-white/[0.03] text-white/40 hover:text-white hover:bg-white/[0.08] transition-all duration-300 font-bold text-[10px] uppercase tracking-[0.2em] px-6 gap-2"
             onClick={handleRejectAll}
           >
-            <XCircle className="h-3.5 w-3.5" />
+            <XCircle className="h-3 w-3" />
             Reject All
           </Button>
           <Button
-            size="sm"
-            className="gap-1.5"
+            className="h-10 rounded-none bg-white text-black hover:bg-white/90 transition-all duration-300 font-bold text-[10px] uppercase tracking-[0.2em] px-6 gap-2 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
             onClick={handleAcceptAll}
           >
-            <CheckCheck className="h-3.5 w-3.5" />
+            <CheckCheck className="h-3 w-3" />
             Accept All
           </Button>
         </div>
       </div>
 
-      <div className="rounded-lg border border-border bg-[#0d1117] font-mono text-sm leading-relaxed overflow-x-auto">
+      <div className="rounded-none border border-white/[0.08] bg-black/40 font-mono text-[13px] leading-relaxed overflow-x-auto selection:bg-white selection:text-black">
         {data.blocks.map((block, blockIdx) => {
           if (block.type === 'unchanged') {
             return (
-              <div key={`u-${blockIdx}`}>
+              <div key={`u-${blockIdx}`} className="py-2">
                 {block.lines!.map((line, lineIdx) => (
-                  <div key={lineIdx} className="px-4 py-0.5 text-text-secondary">
+                  <div key={lineIdx} className="px-6 py-0.5 text-white/30 font-light whitespace-pre">
                     {line || '\u00A0'}
                   </div>
                 ))}
@@ -174,9 +176,9 @@ export function InlineDiff({ oldContent, newContent, onResolve, onAcceptAll, onR
 
           if (status === 'accepted') {
             return (
-              <div key={`h-${hunk.id}`}>
+              <div key={`h-${hunk.id}`} className="py-2">
                 {hunk.newLines.map((line, lineIdx) => (
-                  <div key={lineIdx} className="px-4 py-0.5 text-text-secondary">
+                  <div key={lineIdx} className="px-6 py-0.5 text-white/60 font-light whitespace-pre">
                     {line || '\u00A0'}
                   </div>
                 ))}
@@ -186,9 +188,9 @@ export function InlineDiff({ oldContent, newContent, onResolve, onAcceptAll, onR
 
           if (status === 'rejected') {
             return (
-              <div key={`h-${hunk.id}`}>
+              <div key={`h-${hunk.id}`} className="py-2">
                 {hunk.oldLines.map((line, lineIdx) => (
-                  <div key={lineIdx} className="px-4 py-0.5 text-text-secondary">
+                  <div key={lineIdx} className="px-6 py-0.5 text-white/60 font-light whitespace-pre">
                     {line || '\u00A0'}
                   </div>
                 ))}
@@ -197,19 +199,19 @@ export function InlineDiff({ oldContent, newContent, onResolve, onAcceptAll, onR
           }
 
           return (
-            <div key={`h-${hunk.id}`} className="relative group">
-              <div className="absolute right-2 top-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div key={`h-${hunk.id}`} className="relative group py-4 bg-white/[0.02] border-y border-white/[0.05]">
+              <div className="absolute right-6 top-3 z-10 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-1 group-hover:translate-y-0">
                 <button
                   onClick={() => setHunk(hunk.id, 'rejected')}
-                  className="flex items-center gap-1 rounded-md border border-red-500/30 bg-[#1a1a2e] px-2 py-1 text-xs font-medium text-red-400 hover:bg-red-500/15 transition-colors"
+                  className="flex items-center gap-2 h-7 px-3 text-[9px] font-bold uppercase tracking-widest text-red-200/50 hover:text-red-200 border border-red-500/20 bg-red-500/[0.05] hover:bg-red-500/10 transition-all duration-300 rounded-none"
                   title="Undo this change"
                 >
                   <Undo2 className="h-3 w-3" />
-                  Undo
+                  Discard
                 </button>
                 <button
                   onClick={() => setHunk(hunk.id, 'accepted')}
-                  className="flex items-center gap-1 rounded-md border border-green-500/30 bg-[#1a1a2e] px-2 py-1 text-xs font-medium text-green-400 hover:bg-green-500/15 transition-colors"
+                  className="flex items-center gap-2 h-7 px-3 text-[9px] font-bold uppercase tracking-widest text-green-200/50 hover:text-green-200 border border-green-500/20 bg-green-500/[0.05] hover:bg-green-500/10 transition-all duration-300 rounded-none"
                   title="Keep this change"
                 >
                   <Check className="h-3 w-3" />
@@ -218,11 +220,12 @@ export function InlineDiff({ oldContent, newContent, onResolve, onAcceptAll, onR
               </div>
 
               {hunk.oldLines.length > 0 && (
-                <div>
+                <div className="space-y-0 relative">
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500/40" />
                   {hunk.oldLines.map((line, lineIdx) => (
                     <div
                       key={`old-${lineIdx}`}
-                      className="border-l-2 border-red-500 bg-red-500/10 px-4 py-0.5 text-red-300/80 line-through decoration-red-500/40"
+                      className="bg-red-500/[0.03] px-6 py-1 text-red-200/40 line-through decoration-red-500/40 font-light whitespace-pre"
                     >
                       {line || '\u00A0'}
                     </div>
@@ -231,11 +234,12 @@ export function InlineDiff({ oldContent, newContent, onResolve, onAcceptAll, onR
               )}
 
               {hunk.newLines.length > 0 && (
-                <div>
+                <div className="space-y-0 relative">
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500/40" />
                   {hunk.newLines.map((line, lineIdx) => (
                     <div
                       key={`new-${lineIdx}`}
-                      className="border-l-2 border-green-500 bg-green-500/10 px-4 py-0.5 text-green-300/90"
+                      className="bg-green-500/[0.03] px-6 py-1 text-green-200/80 font-normal whitespace-pre"
                     >
                       {line || '\u00A0'}
                     </div>

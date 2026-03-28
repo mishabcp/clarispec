@@ -449,7 +449,7 @@ export function ChatInterface({ project, onScoreUpdate }: ChatInterfaceProps) {
   return (
     <div className="flex h-full flex-col">
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 scrollbar-thin">
         {messages.filter(Boolean).map((msg, idx, filteredMsgs) => {
           const isLastMessage = idx === filteredMsgs.length - 1
           const isLastQuestion =
@@ -504,13 +504,13 @@ export function ChatInterface({ project, onScoreUpdate }: ChatInterfaceProps) {
 
       {/* Session complete banner */}
       {isSessionComplete && (
-        <div className="border-t border-border bg-success/10 p-4">
+        <div className="border-t border-white/[0.08] bg-success/5 px-6 py-4">
           <div className="flex items-center gap-2 text-success">
-            <CheckCircle2 className="h-5 w-5" />
-            <span className="font-medium">Session Complete</span>
+            <CheckCircle2 className="h-4 w-4" />
+            <span className="text-[10px] uppercase font-bold tracking-[0.2em]">Session Complete</span>
           </div>
-          <p className="mt-1 text-sm text-text-secondary">
-            All requirement areas are covered. You can now generate your documents from the panel on the left.
+          <p className="mt-1 text-[11px] text-white/40 font-light italic">
+            All requirement areas are covered. You can now generate your documents.
           </p>
         </div>
       )}
@@ -523,21 +523,21 @@ export function ChatInterface({ project, onScoreUpdate }: ChatInterfaceProps) {
           messages[messages.length - 1]?.message_type === 'question' &&
           currentQuestion?.suggestions?.length
         )) && (
-        <div className="border-t border-border p-4">
+        <div className="border-t border-white/[0.08] px-4 py-3 bg-black/20">
           {editingMessage !== null && (
             <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="text-xs text-text-muted">Editing message — resend will replace it and the following replies</span>
+              <span className="text-[10px] uppercase tracking-wider text-white/20 italic">Editing message...</span>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-7 gap-1 text-text-muted hover:text-text-primary"
+                className="h-6 px-3 text-[9px] uppercase font-bold tracking-widest text-white/40 hover:text-white"
                 onClick={() => {
                   setEditingMessage(null)
                   setInput('')
                 }}
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-3 w-3" />
                 Cancel
               </Button>
             </div>
@@ -547,16 +547,17 @@ export function ChatInterface({ project, onScoreUpdate }: ChatInterfaceProps) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={editingMessage ? 'Edit your response...' : 'Type your response...'}
+              placeholder={editingMessage ? 'Refine your input...' : 'Contribute to the specification...'}
               disabled={isTyping}
-              className="flex-1"
+              className="flex-1 h-10 rounded-none bg-white/[0.02] border-white/[0.08] focus:border-white/20 text-xs text-white font-light tracking-wide placeholder:text-white/10"
             />
             <Button
               onClick={() => handleSubmit()}
               disabled={!input.trim() || isTyping}
               size="icon"
+              className="h-10 w-10 bg-white text-black hover:bg-white/90 rounded-none shadow-2xl transition-all"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>

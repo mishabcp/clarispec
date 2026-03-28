@@ -1,122 +1,129 @@
-'use client'
-
-import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 import { StatsBar } from '@/components/dashboard/StatsBar'
 import { ProjectCard } from '@/components/dashboard/ProjectCard'
-import { Button } from '@/components/ui/button'
-import type { Project } from '@/types'
-import { Plus, Loader2 } from 'lucide-react'
+import { DashboardWidgets } from '@/components/dashboard/DashboardWidgets'
+import { DashboardPageWrapper } from '@/components/dashboard/DashboardPageWrapper'
+import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
+import Link from 'next/link'
+import { Plus } from 'lucide-react'
+import { redirect } from 'next/navigation'
+import { motion } from 'framer-motion'
 
-interface ProjectWithDocs extends Project {
-  _documentCount: number
+// Define types for server-side
+interface ProjectWithDocs {
+  id: string
+  name: string
+  client_name: string | null
+  client_industry: string | null
+  status: 'gathering' | 'completed' | 'archived'
+  requirement_score: number
+  created_at: string
+  documents: { count: number }[]
 }
 
-export default function DashboardPage() {
-  const [projects, setProjects] = useState<ProjectWithDocs[]>([])
-  const [userName, setUserName] = useState('')
-  const [loading, setLoading] = useState(true)
-  const supabase = useMemo(() => createClient(), [])
+export default async function DashboardPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  useEffect(() => {
-    async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single()
-
-      if (profile?.full_name) {
-        setUserName(profile.full_name)
-      }
-
-      const { data: projectsData } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-
-      if (projectsData) {
-        const projectsWithDocs = await Promise.all(
-          projectsData.map(async (project) => {
-            const { count } = await supabase
-              .from('documents')
-              .select('*', { count: 'exact', head: true })
-              .eq('project_id', project.id)
-            return { ...project, _documentCount: count || 0 }
-          })
-        )
-        setProjects(projectsWithDocs as ProjectWithDocs[])
-      }
-
-      setLoading(false)
-    }
-
-    loadData()
-  }, [supabase])
-
-  const totalProjects = projects.length
-  const inProgress = projects.filter(p => p.status === 'gathering').length
-  const completed = projects.filter(p => p.status === 'completed').length
-  const documentsGenerated = projects.reduce((acc, p) => acc + p._documentCount, 0)
-
-  if (loading) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
+  if (!user) {
+    redirect('/login')
   }
 
+  // Fetch all dashboard data in parallel for maximum speed
+  const [profileRes, projectsRes] = await Promise.all([
+    supabase.from('profiles').select('full_name').eq('id', user.id).single(),
+    supabase
+      .from('projects')
+      // Supabase's documents(count) is very efficient for fetching document counts in one go
+      .select('*, documents(count)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+  ])
+
+  const userName = profileRes.data?.full_name || ''
+  const projectsData = projectsRes.data as any[] || []
+  
+  // Transform data for the UI
+  const projects = projectsData.map(p => ({
+    ...p,
+    _documentCount: p.documents?.[0]?.count || 0
+  }))
+
+  const projectIds = projects.map(p => p.id)
+  
+  // Fetch widgets data if projects exist
+  let documents: any[] = []
+  let areas: any[] = []
+  
+  if (projectIds.length > 0) {
+    const [docsRes, areasRes] = await Promise.all([
+      supabase
+        .from('documents')
+        .select('*, projects(name)')
+        .in('project_id', projectIds)
+        .order('generated_at', { ascending: false })
+        .limit(10),
+      supabase
+        .from('requirement_areas')
+        .select('*')
+        .in('project_id', projectIds)
+    ])
+
+    documents = (docsRes.data || []).map(d => ({
+       ...d,
+       projectName: (d as any).projects?.name || 'Unknown'
+    }))
+    areas = areasRes.data || []
+  }
+
+  const totalProjects = projects.length
+  const completed = projects.filter(p => p.status === 'completed').length
+  const documentsGenerated = projects.reduce((acc, p) => acc + (p as any)._documentCount, 0)
+  const completionRate = totalProjects > 0 ? Math.round((completed / totalProjects) * 100) : 0
+  const avgScore = totalProjects > 0 ? Math.round(projects.reduce((acc, p) => acc + p.requirement_score, 0) / totalProjects) : 0
+
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold font-heading">
-            {userName ? `Welcome back, ${userName}` : 'Dashboard'}
-          </h1>
-          <p className="text-text-secondary mt-1">Manage your projects and requirements</p>
-        </div>
-        <Link href="/projects/new">
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            New Project
-          </Button>
-        </Link>
-      </div>
+    <DashboardPageWrapper>
+      <DashboardHeader userName={userName} />
 
       <StatsBar
         totalProjects={totalProjects}
-        inProgress={inProgress}
-        completed={completed}
+        avgScore={avgScore}
+        completionRate={completionRate}
         documentsGenerated={documentsGenerated}
       />
 
+      {projects.length > 0 && (
+        <DashboardWidgets projects={projects} documents={documents} areas={areas} />
+      )}
+
       {projects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-16">
-          <p className="text-text-muted mb-4">No projects yet. Create your first one!</p>
-          <Link href="/projects/new">
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Create Project
-            </Button>
+        <div className="flex flex-col items-center justify-center bg-[#0a0a0b]/60 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4)] py-24 rounded-[1px]">
+          <p className="text-white/40 mb-6 font-light tracking-wide text-sm">No projects yet. Create your first one to get started.</p>
+          <Link href="/projects/new" className="group relative h-11 bg-white text-black hover:bg-white/90 transition-all duration-500 font-bold text-[10px] uppercase tracking-widest rounded-none shadow-[0_4px_24px_rgba(255,255,255,0.08)] active:scale-[0.985] overflow-hidden px-8 flex items-center justify-center">
+            <span className="relative z-10 flex items-center gap-2">
+              <Plus className="h-3.5 w-3.5" />
+              New Project
+            </span>
           </Link>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {projects.map(project => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              documentCount={project._documentCount}
-            />
-          ))}
+        <div className="space-y-6">
+          <h2 className="text-[10px] uppercase tracking-[0.2em] font-bold text-white/50 border-b border-white/[0.08] pb-4">
+            Your Projects
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {projects.map((project, i) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                documentCount={(project as any)._documentCount}
+                index={i}
+              />
+            ))}
+          </div>
         </div>
       )}
-    </div>
+    </DashboardPageWrapper>
   )
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { CinematicBackground } from '@/components/ui/cinematic-background'
 
 export const metadata: Metadata = {
   title: 'Clarispec — AI-Powered Requirements Engineering',
@@ -14,10 +15,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className="min-h-screen bg-navy antialiased"
+        className="min-h-screen bg-[#050505] antialiased relative selection:bg-white/5"
         suppressHydrationWarning
       >
-        {children}
+        <CinematicBackground />
+        <div className="relative z-10 w-full h-full">
+          {children}
+        </div>
       </body>
     </html>
   )
