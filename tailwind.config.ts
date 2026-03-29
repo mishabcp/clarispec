@@ -33,18 +33,18 @@ const config: Config = {
         'text-muted': '#6B7280',
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        heading: ['Space Grotesk', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-space)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-in',
         'slide-up': 'slideUp 0.3s ease-out',
         'pulse-dot': 'pulseDot 1.4s infinite',
-        /** Auth layout — CSS only (avoids Framer pointer-capture quirks on login/signup) */
-        'auth-shell': 'authShell 1.8s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards',
-        'auth-title': 'authTitle 2.2s cubic-bezier(0.16, 1, 0.36, 1) 0.1s forwards',
-        'auth-heading': 'authHeading 1s ease-out 0.5s forwards',
+        /** Auth layout — shorter than before so LCP/FCP are not delayed by entrance-only motion */
+        'auth-shell': 'authShell 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.04s forwards',
+        'auth-title': 'authTitle 0.75s cubic-bezier(0.16, 1, 0.36, 1) 0.04s forwards',
+        'auth-heading': 'authHeading 0.42s ease-out 0.18s forwards',
         /** Sidebar nav sliding highlight — slow, low-contrast drift */
         'sidebar-nav-sheen': 'sidebarNavSheen 14s ease-in-out infinite',
       },
@@ -58,7 +58,7 @@ const config: Config = {
           '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
         },
         authTitle: {
-          '0%': { opacity: '0', letterSpacing: '0.1em', filter: 'blur(12px)' },
+          '0%': { opacity: '0', letterSpacing: '0.1em', filter: 'blur(6px)' },
           '100%': { opacity: '1', letterSpacing: '0.28em', filter: 'blur(0px)' },
         },
         authHeading: {

@@ -1,13 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { StatsBar } from '@/components/dashboard/StatsBar'
 import { ProjectCard } from '@/components/dashboard/ProjectCard'
-import { DashboardWidgets } from '@/components/dashboard/DashboardWidgets'
-import { DashboardCharts } from '@/components/dashboard/DashboardCharts'
 import type {
   DashboardChartMonthlyItem,
   DashboardChartScoreBucket,
   DashboardChartStatusItem,
 } from '@/components/dashboard/DashboardCharts'
+import {
+  DeferredDashboardCharts,
+  DeferredDashboardWidgets,
+} from '@/components/dashboard/DashboardDeferred'
 import { DashboardPageWrapper } from '@/components/dashboard/DashboardPageWrapper'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import Link from 'next/link'
@@ -150,7 +152,7 @@ export default async function DashboardPage() {
         documentsGenerated={documentsGenerated}
       />
 
-      <DashboardCharts
+      <DeferredDashboardCharts
         statusData={statusChartData}
         monthlyData={monthlyChartData}
         scoreBuckets={scoreBucketData}
@@ -158,7 +160,7 @@ export default async function DashboardPage() {
       />
 
       {projects.length > 0 && (
-        <DashboardWidgets projects={projects} documents={documents} areas={areas} />
+        <DeferredDashboardWidgets projects={projects} documents={documents} areas={areas} />
       )}
 
       {projects.length === 0 ? (

@@ -15,6 +15,11 @@ type WebVitalMetric = {
 const FLUSH_MS = 12_000
 const MAX_QUEUE = 40
 
+/** Avoid logging the perf ingest call itself (noise + feedback loop in `perf_events`). */
+function isPerfIngestPath(pathname: string): boolean {
+  return pathname === '/api/perf/events' || pathname.startsWith('/api/perf/events/')
+}
+
 type ClientPerfEvent = {
   source: 'client'
   kind: string
@@ -141,7 +146,7 @@ export function ClientPerfRoot() {
             return urlStr.slice(0, 200)
           }
         })()
-        if (pathOnly.startsWith('/api/')) {
+        if (pathOnly.startsWith('/api/') && !isPerfIngestPath(pathOnly)) {
           enqueue(queueRef, {
             source: 'client',
             kind: 'fetch',
@@ -159,7 +164,11 @@ export function ClientPerfRoot() {
 
       try {
         const u = new URL(urlStr, window.location.origin)
-        if (u.origin === window.location.origin && u.pathname.startsWith('/api/')) {
+        if (
+          u.origin === window.location.origin &&
+          u.pathname.startsWith('/api/') &&
+          !isPerfIngestPath(u.pathname)
+        ) {
           enqueue(queueRef, {
             source: 'client',
             kind: 'fetch',
