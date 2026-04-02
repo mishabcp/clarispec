@@ -1,0 +1,36 @@
+name: Dependency Security
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  npm-security-checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies (lockfile only)
+        run: npm ci
+
+      - name: Block known compromised Axios versions
+        shell: bash
+        run: |
+          AXIOS_TREE="$(npm ls axios --all 2>/dev/null || true)"
+          echo "$AXIOS_TREE"
+          if echo "$AXIOS_TREE" | grep -Eq 'axios@1\.14\.1|axios@0\.30\.4'; then
+            echo "Blocked compromised Axios version detected."
+            exit 1
+          fi
+
+      - name: Run npm audit (high+ severity)
+        run: npm audit --audit-level=high --omit=dev
